@@ -80,7 +80,6 @@ export const useTenants = () => {
     id: string,
     meters: { waterMeter?: number; electricityMeter?: number; gasMeter?: number }
   ) => {
-    // המרה לשמות שדות תואמים לטבלה
     const updates: any = {};
     if (meters.waterMeter !== undefined) updates.watermeter = meters.waterMeter;
     if (meters.electricityMeter !== undefined) updates.electricitymeter = meters.electricityMeter;
@@ -91,10 +90,10 @@ export const useTenants = () => {
       .update(updates)
       .eq('id', id);
 
-    if (!error) {
-      await fetchTenants();
-    } else {
+    if (error) {
       console.error('Meter update error:', error);
+    } else {
+      await fetchTenants();
     }
   };
 
