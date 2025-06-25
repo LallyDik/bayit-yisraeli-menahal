@@ -19,15 +19,15 @@ export const TenantForm: React.FC<TenantFormProps> = ({
   submitLabel = 'הוסף שוכר'
 }) => {
   const [formData, setFormData] = useState({
-    name: initialData.name || '',
-    monthlyRent: initialData.monthlyRent || 0,
-    monthlyElectricity: initialData.monthlyElectricity || 0,
-    monthlyWater: initialData.monthlyWater || 0,
-    monthlyCommittee: initialData.monthlyCommittee || 0,
-    monthlyGas: initialData.monthlyGas || 0,
-    waterMeter: initialData.waterMeter || 0,
-    electricityMeter: initialData.electricityMeter || 0,
-    gasMeter: initialData.gasMeter || 0,
+    name: initialData.name,
+    monthlyRent: initialData.monthlyRent,
+    monthlyElectricity: initialData.monthlyElectricity,
+    monthlyWater: initialData.monthlyWater,
+    monthlyCommittee: initialData.monthlyCommittee,
+    monthlyGas: initialData.monthlyGas,
+    waterMeter: initialData.waterMeter,
+    electricityMeter: initialData.electricityMeter,
+    gasMeter: initialData.gasMeter,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
