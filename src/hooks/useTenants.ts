@@ -29,7 +29,7 @@ export const useTenants = () => {
       waterMeter: Number(tenant.waterMeter),
       electricityMeter: Number(tenant.electricityMeter),
       gasMeter: Number(tenant.gasMeter),
-      createdAt: new Date().toISOString(),
+      // אל תשלח createdAt אם אין עמודה כזו!
     }]);
     if (!error) {
       await fetchTenants();
