@@ -1,42 +1,53 @@
-
 import { useState, useEffect } from 'react';
 import { Tenant } from '@/types';
+import { supabase } from '@/supabaseClient';
 
 export const useTenants = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
-  useEffect(() => {
-    // Load tenants from localStorage
-    const savedTenants = localStorage.getItem('tenants');
-    if (savedTenants) {
-      setTenants(JSON.parse(savedTenants));
+  // טען שוכרים מ-Supabase
+  const fetchTenants = async () => {
+    const { data, error } = await supabase.from('tenants').select('*');
+    if (!error && data) {
+      setTenants(data as Tenant[]);
     }
+  };
+
+  useEffect(() => {
+    fetchTenants();
   }, []);
 
-  const saveTenants = (newTenants: Tenant[]) => {
-    setTenants(newTenants);
-    localStorage.setItem('tenants', JSON.stringify(newTenants));
-  };
-
-  const addTenant = (tenant: Omit<Tenant, 'id' | 'createdAt'>) => {
-    const newTenant: Tenant = {
+  // הוספת שוכר חדש ל-Supabase
+  const addTenant = async (tenant: Omit<Tenant, 'id' | 'createdAt'>) => {
+    const { error } = await supabase.from('tenants').insert([{
       ...tenant,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-    saveTenants([...tenants, newTenant]);
+      createdAt: new Date().toISOString(),
+    }]);
+    if (!error) {
+      await fetchTenants();
+    }
   };
 
-  const updateTenant = (id: string, updates: Partial<Tenant>) => {
-    const updatedTenants = tenants.map(tenant =>
-      tenant.id === id ? { ...tenant, ...updates } : tenant
-    );
-    saveTenants(updatedTenants);
+  // עדכון שוכר קיים ב-Supabase
+  const updateTenant = async (id: string, updates: Partial<Tenant>) => {
+    const { error } = await supabase
+      .from('tenants')
+      .update({ ...updates })
+      .eq('id', id);
+    if (!error) {
+      await fetchTenants();
+    }
   };
 
-  const deleteTenant = (id: string) => {
-    const filteredTenants = tenants.filter(tenant => tenant.id !== id);
-    saveTenants(filteredTenants);
+  // מחיקת שוכר מ-Supabase
+  const deleteTenant = async (id: string) => {
+    const { error } = await supabase
+      .from('tenants')
+      .delete()
+      .eq('id', id);
+    if (!error) {
+      await fetchTenants();
+    }
   };
 
   return {
@@ -44,5 +55,6 @@ export const useTenants = () => {
     addTenant,
     updateTenant,
     deleteTenant,
+    fetchTenants,
   };
 };

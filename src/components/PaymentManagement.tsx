@@ -113,7 +113,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   const paidAmount = paymentItems.reduce((sum, item) => sum + item.paid, 0);
   const remainingAmount = totalAmount - paidAmount + previousMonthDebt;
 
-  const handlePaymentChange = (paymentType: PaymentType, amount: number) => {
+  const handlePaymentChange = async (paymentType: PaymentType, amount: number) => {
     // Create payment record if it doesn't exist
     if (!currentPayment) {
       const newPayment: MonthlyPayment = {
@@ -130,10 +130,21 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         updatedAt: new Date(),
       };
       
-      const currentPayments = JSON.parse(localStorage.getItem('payments') || '[]');
-      currentPayments.push(newPayment);
-      localStorage.setItem('payments', JSON.stringify(currentPayments));
-      //window.location.reload(); // Trigger re-render
+      const { error } = await supabase
+        .from('payments')
+        .insert([{
+          tenantId: tenant.id,
+          hebrewMonth: selectedMonth,
+          hebrewYear: selectedYear,
+          ...editValues,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }]);
+      if (error) {
+        console.error('Insert error:', error);
+      } else {
+        console.log('Payment inserted successfully');
+      }
     } else {
       updatePaymentStatus(currentPayment.id, paymentType, amount);
     }
@@ -155,28 +166,50 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
 
   const handleSave = async () => {
     setSaving(true);
-    if (currentPayment) {
-      await supabase
-        .from('payments')
-        .update({
-          ...editValues,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq('id', currentPayment.id);
-    } else {
-      await supabase
-        .from('payments')
-        .insert([{
+    try {
+      if (currentPayment) {
+        console.log('Updating payment:', { id: currentPayment.id, ...editValues });
+        const { error } = await supabase
+          .from('payments')
+          .update({
+            ...editValues,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq('id', currentPayment.id);
+        if (error) {
+          console.error('Update error:', error);
+        } else {
+          console.log('Payment updated successfully');
+        }
+      } else {
+        // יצירת תשלום חדש
+        console.log('Inserting new payment:', {
           tenantId: tenant.id,
           hebrewMonth: selectedMonth,
           hebrewYear: selectedYear,
           ...editValues,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }]);
+        });
+        const { error } = await supabase
+          .from('payments')
+          .insert([{
+            tenantId: tenant.id,
+            hebrewMonth: selectedMonth,
+            hebrewYear: selectedYear,
+            ...editValues,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }]);
+        if (error) {
+          console.error('Insert error:', error);
+        } else {
+          console.log('Payment inserted successfully');
+        }
+      }
+      // רענון נתונים אם צריך
+    } catch (e) {
+      console.error('Save error:', e);
     }
     setSaving(false);
-    // רענון נתונים אם צריך
   };
 
   return (
@@ -467,7 +500,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, totalSum }) => 
       </div>
       <div className="flex items-center justify-between mt-2">
         <span>
-          <b>סה״כ שולם:</b> ₪{paidSum}
+          <b>סה״ג שולם:</b> ₪{paidSum}
         </span>
         <span>
           <b>סטטוס:</b>{' '}
