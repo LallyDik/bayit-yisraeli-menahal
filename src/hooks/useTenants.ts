@@ -25,7 +25,7 @@ export const useTenants = () => {
       monthlyelectricity: Number(tenant.monthlyElectricity),
       monthlywater: Number(tenant.monthlyWater),
       monthlycommittee: Number(tenant.monthlyCommittee),
-      monthlyGas: Number(tenant.monthlyGas),
+      monthlygas: Number(tenant.monthlyGas),
       watermeter: Number(tenant.waterMeter),
       electricitymeter: Number(tenant.electricityMeter),
       gasmeter: Number(tenant.gasMeter),
