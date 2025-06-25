@@ -2,6 +2,24 @@ import { useState, useEffect } from 'react';
 import { Tenant } from '@/types';
 import { supabase } from '@/supabaseClient';
 
+function normalizeTenant(tenant: any): Tenant {
+  return {
+    ...tenant,
+    monthlyRent: Number(tenant.monthlyrent),
+    monthlyElectricity: Number(tenant.monthlyelectricity),
+    monthlyWater: Number(tenant.monthlywater),
+    monthlyCommittee: Number(tenant.monthlycommittee),
+    monthlyGas: Number(tenant.monthlygas),
+    waterMeter: Number(tenant.watermeter),
+    electricityMeter: Number(tenant.electricitymeter),
+    gasMeter: Number(tenant.gasmeter),
+    createdAt: tenant.createdat ? new Date(tenant.createdat) : new Date(),
+    id: tenant.id,
+    name: tenant.name,
+    userId: tenant.userid,
+  };
+}
+
 export const useTenants = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
@@ -9,7 +27,7 @@ export const useTenants = () => {
   const fetchTenants = async () => {
     const { data, error } = await supabase.from('tenants').select('*');
     if (!error && data) {
-      setTenants(data as Tenant[]);
+      setTenants(data.map(normalizeTenant));
     }
   };
 
