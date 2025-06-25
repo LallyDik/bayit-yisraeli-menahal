@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,6 +13,7 @@ export const Auth = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +22,24 @@ export const Auth = () => {
     try {
       if (isLogin) {
         await signIn(email, password);
+        toast({
+          title: "התחברת בהצלחה",
+          description: "ברוך הבא למערכת ניהול שוכרים",
+        });
       } else {
         await signUp(email, password);
+        toast({
+          title: "חשבון נוצר בהצלחה",
+          description: "נרשמת בהצלחה למערכת",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Authentication error:', error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "אירעה שגיאה בהתחברות",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -65,6 +80,7 @@ export const Auth = () => {
                 placeholder="הכנס סיסמה"
                 required
                 className="text-right"
+                minLength={6}
               />
             </div>
             <Button 
@@ -72,7 +88,7 @@ export const Auth = () => {
               className="w-full gradient-bg hover:opacity-90"
               disabled={loading}
             >
-              {loading ? 'מתחבר...' : isLogin ? 'התחבר' : 'צור חשבון'}
+              {loading ? 'מעבד...' : isLogin ? 'התחבר' : 'צור חשבון'}
             </Button>
           </form>
           <div className="mt-4 text-center">
