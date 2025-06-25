@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,14 @@ interface PaymentManagementProps {
   onTenantUpdate?: (id: string, updates: Partial<Tenant>) => void;
 }
 
+const paymentLabels: Record<PaymentType, string> = {
+  rent: 'שכירות',
+  electricity: 'חשמל',
+  water: 'מים',
+  committee: 'ועד בית',
+  gas: 'גז',
+};
+
 export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   tenant,
   onBack,
@@ -30,6 +39,14 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     electricityMeter: tenant.electricityMeter || 0,
     gasMeter: tenant.gasMeter || 0
   });
+  const [editValues, setEditValues] = useState({
+    rentPaid: 0,
+    electricityPaid: 0,
+    waterPaid: 0,
+    committeePaid: 0,
+    gasPaid: 0,
+  });
+  const [saving, setSaving] = useState(false);
 
   // Get current month payment
   const currentPayment = getPaymentByTenantAndMonth(tenant.id, selectedMonth, selectedYear);
@@ -129,17 +146,25 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     }
   };
 
-  // הוסף סטייט לערכים הזמניים
-  const [editPayments, setEditPayments] = useState(
-    paymentItems.reduce((acc, item) => ({ ...acc, [item.type]: item.paid }), {})
-  );
+  const handleChange = (type: keyof typeof editValues, value: number) => {
+    setEditValues((prev) => ({
+      ...prev,
+      [type]: value,
+    }));
+  };
 
-  // עדכן את הסטייט כשמשתנה currentPayment
-  useEffect(() => {
-    setEditPayments(
-      paymentItems.reduce((acc, item) => ({ ...acc, [item.type]: item.paid }), {})
-    );
-  }, [currentPayment]);
+  const handleSave = async () => {
+    setSaving(true);
+    await supabase
+      .from('payments')
+      .update({
+        ...editValues,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', currentPayment?.id);
+    setSaving(false);
+    // אפשר להוסיף הודעת הצלחה/רענון
+  };
 
   return (
     <div className="space-y-6">
@@ -299,7 +324,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           {paymentItems.map((item) => {
-            const remaining = item.amount - (editPayments[item.type] || 0);
+            const remaining = item.amount - item.paid;
             return (
               <div key={item.type} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-4 flex-1">
@@ -317,15 +342,9 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                   <Input
                     id={`payment-${item.type}`}
                     type="number"
-                    value={editPayments[item.type] ?? ""}
+                    value={item.paid || ""}
                     placeholder=""
-                    onChange={(e) =>
-                      setEditPayments((prev) => ({
-                        ...prev,
-                        [item.type]: Number(e.target.value) || 0,
-                      }))
-                    }
-                    onBlur={(e) =>
+                    onChange={(e) => 
                       handlePaymentChange(item.type, Number(e.target.value) || 0)
                     }
                     min="0"
@@ -361,6 +380,107 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Row Component - For Editing Payments */}
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4">עריכת תשלומים</h3>
+        {payments.map((payment) => (
+          <PaymentRow key={payment.id} payment={payment} />
+        ))}
+      </div>
     </div>
   );
+};
+
+export const PaymentRow: React.FC<PaymentRowProps> = ({ payment }) => {
+  const [editValues, setEditValues] = useState({
+    rentPaid: payment.rentPaid,
+    electricityPaid: payment.electricityPaid,
+    waterPaid: payment.waterPaid,
+    committeePaid: payment.committeePaid,
+    gasPaid: payment.gasPaid,
+  });
+  const [saving, setSaving] = useState(false);
+
+  // סכום ששולם בפועל
+  const paidSum =
+    editValues.rentPaid +
+    editValues.electricityPaid +
+    editValues.waterPaid +
+    editValues.committeePaid +
+    editValues.gasPaid;
+
+  // סכום כולל (אם יש לך אותו, אפשר להעביר כ-prop או לחשב לפי Tenant)
+  // כאן דוגמה לסכום יעד דמיוני:
+  const totalSum =  // שים כאן את הסכום הכולל לחודש הזה
+    0; // לדוג' tenant.monthlyRent + tenant.monthlyElectricity + ...
+
+  const handleChange = (type: keyof typeof editValues, value: number) => {
+    setEditValues((prev) => ({
+      ...prev,
+      [type]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await supabase
+      .from('payments')
+      .update({
+        ...editValues,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', payment.id);
+    setSaving(false);
+    // אפשר להוסיף הודעת הצלחה/רענון
+  };
+
+  return (
+    <div className="border rounded-lg p-4 mb-2">
+      <div className="flex flex-col gap-2">
+        {Object.entries(paymentLabels).map(([type, label]) => (
+          <div key={type} className="flex items-center gap-2">
+            <span className="w-20">{label}:</span>
+            <input
+              type="number"
+              min={0}
+              value={editValues[`${type}Paid` as keyof typeof editValues]}
+              onChange={e =>
+                handleChange(`${type}Paid` as keyof typeof editValues, Number(e.target.value) || 0)
+              }
+              className="border rounded px-2 py-1 w-24 text-center"
+            />
+            <span className="text-xs text-gray-500">
+              שולם: {editValues[`${type}Paid` as keyof typeof editValues]}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-4">
+        <span>
+          <b>סה״כ שולם:</b> ₪{paidSum}
+        </span>
+        {/* הצג אם חלקי או מלא */}
+        <span>
+          <b>סטטוס:</b>{' '}
+          {totalSum > 0
+            ? paidSum >= totalSum
+              ? 'שולם במלואו'
+              : `שולם חלקית (נשאר ₪${totalSum - paidSum})`
+            : ''}
+        </span>
+        <button
+          className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? 'שומר...' : 'שמור'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+type PaymentRowProps = {
+  payment: MonthlyPayment;
 };
