@@ -155,15 +155,29 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
 
   const handleSave = async () => {
     setSaving(true);
-    await supabase
-      .from('payments')
-      .update({
-        ...editValues,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', currentPayment?.id);
+    if (currentPayment) {
+      await supabase
+        .from('payments')
+        .update({
+          ...editValues,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', currentPayment.id);
+    } else {
+      // יצירת תשלום חדש אם אין currentPayment
+      await supabase
+        .from('payments')
+        .insert([{
+          tenantId: tenant.id,
+          hebrewMonth: selectedMonth,
+          hebrewYear: selectedYear,
+          ...editValues,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }]);
+    }
     setSaving(false);
-    // אפשר להוסיף הודעת הצלחה/רענון
+    // אפשר להציג הודעת הצלחה
   };
 
   return (
@@ -385,14 +399,14 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       <div className="mt-8">
         <h3 className="text-xl font-semibold mb-4">עריכת תשלומים</h3>
         {payments.map((payment) => (
-          <PaymentRow key={payment.id} payment={payment} />
+          <PaymentRow key={payment.id} payment={payment} totalSum={totalAmount} />
         ))}
       </div>
     </div>
   );
 };
 
-export const PaymentRow: React.FC<PaymentRowProps> = ({ payment }) => {
+export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, totalSum }) => {
   const [editValues, setEditValues] = useState({
     rentPaid: payment.rentPaid,
     electricityPaid: payment.electricityPaid,
@@ -402,18 +416,12 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment }) => {
   });
   const [saving, setSaving] = useState(false);
 
-  // סכום ששולם בפועל
   const paidSum =
     editValues.rentPaid +
     editValues.electricityPaid +
     editValues.waterPaid +
     editValues.committeePaid +
     editValues.gasPaid;
-
-  // סכום כולל (אם יש לך אותו, אפשר להעביר כ-prop או לחשב לפי Tenant)
-  // כאן דוגמה לסכום יעד דמיוני:
-  const totalSum =  // שים כאן את הסכום הכולל לחודש הזה
-    0; // לדוג' tenant.monthlyRent + tenant.monthlyElectricity + ...
 
   const handleChange = (type: keyof typeof editValues, value: number) => {
     setEditValues((prev) => ({
@@ -432,7 +440,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment }) => {
       })
       .eq('id', payment.id);
     setSaving(false);
-    // אפשר להוסיף הודעת הצלחה/רענון
+    // אפשר להוסיף הודעת הצלחה
   };
 
   return (
@@ -456,11 +464,10 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment }) => {
           </div>
         ))}
       </div>
-      <div className="mt-2 flex items-center gap-4">
+      <div className="flex items-center justify-between mt-2">
         <span>
           <b>סה״כ שולם:</b> ₪{paidSum}
         </span>
-        {/* הצג אם חלקי או מלא */}
         <span>
           <b>סטטוס:</b>{' '}
           {totalSum > 0
@@ -483,4 +490,5 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment }) => {
 
 type PaymentRowProps = {
   payment: MonthlyPayment;
+  totalSum: number; // סכום יעד לחודש הזה
 };
