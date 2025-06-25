@@ -33,7 +33,7 @@ const Index = () => {
   };
 
   const totalMonthlyIncome = tenants.reduce((sum, tenant) => 
-    sum + tenant.monthlyRent + tenant.monthlyElectricity + tenant.monthlyWater + tenant.monthlyCommittee + tenant.monthlyGas, 0
+    sum + (tenant.monthlyRent || 0) + (tenant.monthlyElectricity || 0) + (tenant.monthlyWater || 0) + (tenant.monthlyCommittee || 0) + (tenant.monthlyGas || 0), 0
   );
 
   if (viewMode === 'add-tenant') {

@@ -31,31 +31,31 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     {
       type: 'rent' as PaymentType,
       label: 'שכירות',
-      amount: tenant.monthlyRent,
+      amount: tenant.monthlyRent || 0,
       paid: currentPayment?.rentPaid || 0
     },
     {
       type: 'electricity' as PaymentType,
       label: 'חשמל',
-      amount: tenant.monthlyElectricity,
+      amount: tenant.monthlyElectricity || 0,
       paid: currentPayment?.electricityPaid || 0
     },
     {
       type: 'water' as PaymentType,
       label: 'מים',
-      amount: tenant.monthlyWater,
+      amount: tenant.monthlyWater || 0,
       paid: currentPayment?.waterPaid || 0
     },
     {
       type: 'committee' as PaymentType,
       label: 'ועד בית',
-      amount: tenant.monthlyCommittee,
+      amount: tenant.monthlyCommittee || 0,
       paid: currentPayment?.committeePaid || 0
     },
     {
       type: 'gas' as PaymentType,
       label: 'גז',
-      amount: tenant.monthlyGas,
+      amount: tenant.monthlyGas || 0,
       paid: currentPayment?.gasPaid || 0
     }
   ];

@@ -20,11 +20,11 @@ export const TenantCard: React.FC<TenantCardProps> = ({
   onViewPayments
 }) => {
   const totalMonthly = 
-    tenant.monthlyRent + 
-    tenant.monthlyElectricity + 
-    tenant.monthlyWater + 
-    tenant.monthlyCommittee +
-    tenant.monthlyGas;
+    (tenant.monthlyRent || 0) + 
+    (tenant.monthlyElectricity || 0) + 
+    (tenant.monthlyWater || 0) + 
+    (tenant.monthlyCommittee || 0) +
+    (tenant.monthlyGas || 0);
 
   return (
     <Card className="w-full card-hover">
@@ -46,23 +46,23 @@ export const TenantCard: React.FC<TenantCardProps> = ({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">שכירות:</span>
-            <span className="font-semibold">₪{tenant.monthlyRent.toLocaleString()}</span>
+            <span className="font-semibold">₪{(tenant.monthlyRent || 0).toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">חשמל:</span>
-            <span className="font-semibold">₪{tenant.monthlyElectricity.toLocaleString()}</span>
+            <span className="font-semibold">₪{(tenant.monthlyElectricity || 0).toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">מים:</span>
-            <span className="font-semibold">₪{tenant.monthlyWater.toLocaleString()}</span>
+            <span className="font-semibold">₪{(tenant.monthlyWater || 0).toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">ועד בית:</span>
-            <span className="font-semibold">₪{tenant.monthlyCommittee.toLocaleString()}</span>
+            <span className="font-semibold">₪{(tenant.monthlyCommittee || 0).toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">גז:</span>
-            <span className="font-semibold">₪{tenant.monthlyGas.toLocaleString()}</span>
+            <span className="font-semibold">₪{(tenant.monthlyGas || 0).toLocaleString()}</span>
           </div>
         </div>
 
@@ -71,15 +71,15 @@ export const TenantCard: React.FC<TenantCardProps> = ({
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="text-center">
               <span className="text-muted-foreground block">מים</span>
-              <span className="font-semibold">{tenant.waterMeter}</span>
+              <span className="font-semibold">{tenant.waterMeter || 0}</span>
             </div>
             <div className="text-center">
               <span className="text-muted-foreground block">חשמל</span>
-              <span className="font-semibold">{tenant.electricityMeter}</span>
+              <span className="font-semibold">{tenant.electricityMeter || 0}</span>
             </div>
             <div className="text-center">
               <span className="text-muted-foreground block">גז</span>
-              <span className="font-semibold">{tenant.gasMeter}</span>
+              <span className="font-semibold">{tenant.gasMeter || 0}</span>
             </div>
           </div>
         </div>
