@@ -26,9 +26,9 @@ export const useTenants = () => {
       monthlyWater: Number(tenant.monthlyWater),
       monthlyCommittee: Number(tenant.monthlyCommittee),
       monthlyGas: Number(tenant.monthlyGas),
-      waterMeter: Number(tenant.waterMeter),
-      electricityMeter: Number(tenant.electricityMeter),
-      gasMeter: Number(tenant.gasMeter),
+      watermeter: Number(tenant.waterMeter),
+      electricitymeter: Number(tenant.electricityMeter),
+      gasmeter: Number(tenant.gasMeter),
       // אל תשלח createdAt אם אין עמודה כזו!
     }]);
     if (!error) {
