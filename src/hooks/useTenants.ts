@@ -20,11 +20,21 @@ export const useTenants = () => {
   // הוספת שוכר חדש ל-Supabase
   const addTenant = async (tenant: Omit<Tenant, 'id' | 'createdAt'>) => {
     const { error } = await supabase.from('tenants').insert([{
-      ...tenant,
+      name: tenant.name,
+      monthlyRent: Number(tenant.monthlyRent),
+      monthlyElectricity: Number(tenant.monthlyElectricity),
+      monthlyWater: Number(tenant.monthlyWater),
+      monthlyCommittee: Number(tenant.monthlyCommittee),
+      monthlyGas: Number(tenant.monthlyGas),
+      waterMeter: Number(tenant.waterMeter),
+      electricityMeter: Number(tenant.electricityMeter),
+      gasMeter: Number(tenant.gasMeter),
       createdAt: new Date().toISOString(),
     }]);
     if (!error) {
       await fetchTenants();
+    } else {
+      console.error('Supabase insert error:', error);
     }
   };
 
