@@ -75,6 +75,29 @@ export const useTenants = () => {
     }
   };
 
+  // עדכון מונים בלבד עבור שוכר
+  const updateTenantMeters = async (
+    id: string,
+    meters: { waterMeter?: number; electricityMeter?: number; gasMeter?: number }
+  ) => {
+    // המרה לשמות שדות תואמים לטבלה
+    const updates: any = {};
+    if (meters.waterMeter !== undefined) updates.watermeter = meters.waterMeter;
+    if (meters.electricityMeter !== undefined) updates.electricitymeter = meters.electricityMeter;
+    if (meters.gasMeter !== undefined) updates.gasmeter = meters.gasMeter;
+
+    const { error } = await supabase
+      .from('tenants')
+      .update(updates)
+      .eq('id', id);
+
+    if (!error) {
+      await fetchTenants();
+    } else {
+      console.error('Meter update error:', error);
+    }
+  };
+
   // מחיקת שוכר מ-Supabase
   const deleteTenant = async (id: string) => {
     const { error } = await supabase
@@ -90,7 +113,10 @@ export const useTenants = () => {
     tenants,
     addTenant,
     updateTenant,
+    updateTenantMeters, // הוסף את הפונקציה החדשה ל-export
     deleteTenant,
     fetchTenants,
   };
 };
+
+

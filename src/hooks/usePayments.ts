@@ -29,7 +29,7 @@ export const usePayments = () => {
       .update({ [`${paymentType}Paid`]: amount, updatedAt })
       .eq('id', paymentId);
     if (!error) {
-      await fetchPayments(); // רענון אוטומטי אחרי עדכון
+      await fetchPayments();
     }
   };
 
