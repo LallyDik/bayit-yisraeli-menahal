@@ -21,10 +21,10 @@ export const useTenants = () => {
   const addTenant = async (tenant: Omit<Tenant, 'id' | 'createdAt'>) => {
     const { error } = await supabase.from('tenants').insert([{
       name: tenant.name,
-      monthlyRent: Number(tenant.monthlyRent),
-      monthlyElectricity: Number(tenant.monthlyElectricity),
-      monthlyWater: Number(tenant.monthlyWater),
-      monthlyCommittee: Number(tenant.monthlyCommittee),
+      monthlyrent: Number(tenant.monthlyRent),
+      monthlyelectricity: Number(tenant.monthlyElectricity),
+      monthlywater: Number(tenant.monthlyWater),
+      monthlycommittee: Number(tenant.monthlyCommittee),
       monthlyGas: Number(tenant.monthlyGas),
       watermeter: Number(tenant.waterMeter),
       electricitymeter: Number(tenant.electricityMeter),
