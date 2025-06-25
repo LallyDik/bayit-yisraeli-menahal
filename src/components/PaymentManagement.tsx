@@ -399,6 +399,21 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                     max={item.amount}
                     className="w-32 text-sm ltr no-arrows text-center"
                   />
+                  <Button
+                    onClick={async () => {
+                      setSaving(true);
+                      await updatePaymentStatus(
+                        currentPayment.id,
+                        item.type,
+                        editValues[`${item.type}Paid`] ?? 0
+                      );
+                      setSaving(false);
+                    }}
+                    disabled={saving}
+                    className="ml-2"
+                  >
+                    שמור
+                  </Button>
                 </div>
                 <div className="text-right flex-1 flex justify-end">
                   <Badge variant={remaining === 0 ? "default" : "secondary"}>

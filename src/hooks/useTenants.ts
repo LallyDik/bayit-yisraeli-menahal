@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tenant } from '@/types';
 import { supabase } from '@/supabaseClient';
+import { usePayments } from '@/hooks/usePayments';
 
 function normalizeTenant(tenant: any): Tenant {
   return {
@@ -117,5 +118,3 @@ export const useTenants = () => {
     fetchTenants,
   };
 };
-
-
