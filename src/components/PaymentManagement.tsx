@@ -133,7 +133,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       const currentPayments = JSON.parse(localStorage.getItem('payments') || '[]');
       currentPayments.push(newPayment);
       localStorage.setItem('payments', JSON.stringify(currentPayments));
-      window.location.reload(); // Trigger re-render
+      //window.location.reload(); // Trigger re-render
     } else {
       updatePaymentStatus(currentPayment.id, paymentType, amount);
     }
@@ -164,7 +164,6 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         })
         .eq('id', currentPayment.id);
     } else {
-      // יצירת תשלום חדש אם אין currentPayment
       await supabase
         .from('payments')
         .insert([{
@@ -177,7 +176,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         }]);
     }
     setSaving(false);
-    // אפשר להציג הודעת הצלחה
+    // רענון נתונים אם צריך
   };
 
   return (
@@ -356,10 +355,12 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                   <Input
                     id={`payment-${item.type}`}
                     type="number"
-                    value={item.paid || ""}
-                    placeholder=""
-                    onChange={(e) => 
-                      handlePaymentChange(item.type, Number(e.target.value) || 0)
+                    value={editValues[`${item.type}Paid`] ?? ""}
+                    onChange={e =>
+                      setEditValues(prev => ({
+                        ...prev,
+                        [`${item.type}Paid`]: Number(e.target.value) || 0,
+                      }))
                     }
                     min="0"
                     max={item.amount}
