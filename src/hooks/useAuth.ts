@@ -3,8 +3,8 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabaseUrl = 'https://sdjgcirhmvlihgoafxxi.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdjaXJobXZsaWhnb2FmeHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MzczMDUsImV4cCI6MjA2NjQxMzMwNX0.E0-iz3bJ_qu-YNXSiothblVpxs9luiCaaR-jOpODPTo';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface User {
