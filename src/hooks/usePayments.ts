@@ -1,39 +1,36 @@
-
 import { useState, useEffect } from 'react';
 import { MonthlyPayment, PaymentType } from '@/types';
+import { supabase } from '@/supabaseClient';
 
 export const usePayments = () => {
   const [payments, setPayments] = useState<MonthlyPayment[]>([]);
 
-  useEffect(() => {
-    // Load payments from localStorage
-    const savedPayments = localStorage.getItem('payments');
-    if (savedPayments) {
-      setPayments(JSON.parse(savedPayments));
+  const fetchPayments = async () => {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*');
+    if (!error && data) {
+      setPayments(data as MonthlyPayment[]);
     }
-  }, []);
-
-  const savePayments = (newPayments: MonthlyPayment[]) => {
-    setPayments(newPayments);
-    localStorage.setItem('payments', JSON.stringify(newPayments));
   };
 
-  const updatePaymentStatus = (
-    paymentId: string, 
-    paymentType: PaymentType, 
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const updatePaymentStatus = async (
+    paymentId: string,
+    paymentType: PaymentType,
     amount: number
   ) => {
-    const updatedPayments = payments.map(payment => {
-      if (payment.id === paymentId) {
-        return {
-          ...payment,
-          [`${paymentType}Paid`]: amount,
-          updatedAt: new Date(),
-        };
-      }
-      return payment;
-    });
-    savePayments(updatedPayments);
+    const updatedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from('payments')
+      .update({ [`${paymentType}Paid`]: amount, updatedAt })
+      .eq('id', paymentId);
+    if (!error) {
+      await fetchPayments(); // רענון אוטומטי אחרי עדכון
+    }
   };
 
   const getPaymentsByTenant = (tenantId: string) => {
@@ -41,14 +38,14 @@ export const usePayments = () => {
   };
 
   const getPaymentByTenantAndMonth = (
-    tenantId: string, 
-    month: string, 
+    tenantId: string,
+    month: string,
     year: string
   ) => {
     return payments.find(
-      payment => 
-        payment.tenantId === tenantId && 
-        payment.hebrewMonth === month && 
+      payment =>
+        payment.tenantId === tenantId &&
+        payment.hebrewMonth === month &&
         payment.hebrewYear === year
     );
   };
