@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,6 +128,18 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       setEditingMeters(false);
     }
   };
+
+  // הוסף סטייט לערכים הזמניים
+  const [editPayments, setEditPayments] = useState(
+    paymentItems.reduce((acc, item) => ({ ...acc, [item.type]: item.paid }), {})
+  );
+
+  // עדכן את הסטייט כשמשתנה currentPayment
+  useEffect(() => {
+    setEditPayments(
+      paymentItems.reduce((acc, item) => ({ ...acc, [item.type]: item.paid }), {})
+    );
+  }, [currentPayment]);
 
   return (
     <div className="space-y-6">
@@ -288,7 +299,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           {paymentItems.map((item) => {
-            const remaining = item.amount - item.paid;
+            const remaining = item.amount - (editPayments[item.type] || 0);
             return (
               <div key={item.type} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-4 flex-1">
@@ -306,9 +317,15 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                   <Input
                     id={`payment-${item.type}`}
                     type="number"
-                    value={item.paid || ""}
+                    value={editPayments[item.type] ?? ""}
                     placeholder=""
-                    onChange={(e) => 
+                    onChange={(e) =>
+                      setEditPayments((prev) => ({
+                        ...prev,
+                        [item.type]: Number(e.target.value) || 0,
+                      }))
+                    }
+                    onBlur={(e) =>
                       handlePaymentChange(item.type, Number(e.target.value) || 0)
                     }
                     min="0"
