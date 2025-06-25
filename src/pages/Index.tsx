@@ -2,19 +2,44 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Receipt, BarChart } from 'lucide-react';
+import { Plus, Users, Receipt, BarChart, LogOut } from 'lucide-react';
 import { TenantForm } from '@/components/TenantForm';
 import { TenantCard } from '@/components/TenantCard';
 import { PaymentManagement } from '@/components/PaymentManagement';
+import { Auth } from '@/components/Auth';
 import { useTenants } from '@/hooks/useTenants';
+import { useAuth } from '@/hooks/useAuth';
+import { usePayments } from '@/hooks/usePayments';
+import { getCurrentHebrewDate } from '@/utils/hebrewDates';
 import { Tenant } from '@/types';
 
 type ViewMode = 'dashboard' | 'add-tenant' | 'edit-tenant' | 'manage-payments';
 
 const Index = () => {
+  const { user, loading, signOut } = useAuth();
   const { tenants, addTenant, updateTenant, deleteTenant } = useTenants();
+  const { payments } = usePayments();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+
+  const currentDate = getCurrentHebrewDate();
+
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg">טוען...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication screen if user is not logged in
+  if (!user) {
+    return <Auth />;
+  }
 
   const handleAddTenant = (tenantData: Omit<Tenant, 'id' | 'createdAt'>) => {
     addTenant(tenantData);
@@ -49,17 +74,40 @@ const Index = () => {
     sum + (tenant.monthlyRent || 0) + (tenant.monthlyElectricity || 0) + (tenant.monthlyWater || 0) + (tenant.monthlyCommittee || 0) + (tenant.monthlyGas || 0), 0
   );
 
+  // Calculate total remaining to pay across all tenants
+  const totalRemainingToPay = tenants.reduce((sum, tenant) => {
+    const tenantTotal = (tenant.monthlyRent || 0) + (tenant.monthlyElectricity || 0) + 
+                       (tenant.monthlyWater || 0) + (tenant.monthlyCommittee || 0) + (tenant.monthlyGas || 0);
+    
+    const currentPayment = payments.find(payment => 
+      payment.tenantId === tenant.id && 
+      payment.hebrewMonth === currentDate.month && 
+      payment.hebrewYear === currentDate.year
+    );
+    
+    const paidAmount = currentPayment ? 
+      (currentPayment.rentPaid || 0) + (currentPayment.electricityPaid || 0) + 
+      (currentPayment.waterPaid || 0) + (currentPayment.committeePaid || 0) + 
+      (currentPayment.gasPaid || 0) : 0;
+    
+    return sum + (tenantTotal - paidAmount);
+  }, 0);
+
   if (viewMode === 'add-tenant') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between items-center">
             <Button 
               onClick={() => setViewMode('dashboard')} 
               variant="outline"
               className="mb-4"
             >
               ← חזור לדשבורד
+            </Button>
+            <Button onClick={signOut} variant="ghost" size="sm">
+              <LogOut className="w-4 h-4 ml-2" />
+              התנתק
             </Button>
           </div>
           <div className="flex justify-center">
@@ -74,7 +122,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between items-center">
             <Button 
               onClick={() => {
                 setViewMode('dashboard');
@@ -84,6 +132,10 @@ const Index = () => {
               className="mb-4"
             >
               ← חזור לדשבורד
+            </Button>
+            <Button onClick={signOut} variant="ghost" size="sm">
+              <LogOut className="w-4 h-4 ml-2" />
+              התנתק
             </Button>
           </div>
           <div className="flex justify-center">
@@ -102,6 +154,12 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
         <div className="max-w-6xl mx-auto">
+          <div className="mb-6 flex justify-end">
+            <Button onClick={signOut} variant="ghost" size="sm">
+              <LogOut className="w-4 h-4 ml-2" />
+              התנתק
+            </Button>
+          </div>
           <PaymentManagement 
             tenant={selectedTenant}
             onBack={() => {
@@ -119,9 +177,18 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
       {/* Header */}
       <div className="gradient-bg text-white p-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-bold mb-2">מערכת ניהול שוכרים</h1>
-          <p className="text-xl opacity-90">ניהול מקצועי של נכסים ותשלומים</p>
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">מערכת ניהול שוכרים</h1>
+            <p className="text-xl opacity-90">ניהול מקצועי של נכסים ותשלומים</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-lg">{user.email}</span>
+            <Button onClick={signOut} variant="ghost" size="sm" className="text-white hover:bg-white/20">
+              <LogOut className="w-4 h-4 ml-2" />
+              התנתק
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -163,8 +230,8 @@ const Index = () => {
                   <Receipt className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{tenants.length * 5}</p>
-                  <p className="text-sm text-muted-foreground">כמה נשאר לשלם</p>
+                  <p className="text-2xl font-bold">₪{totalRemainingToPay.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">נשאר לשלם</p>
                 </div>
               </div>
             </CardContent>
