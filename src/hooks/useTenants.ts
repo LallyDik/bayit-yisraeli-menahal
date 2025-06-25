@@ -18,7 +18,14 @@ export const useTenants = () => {
   }, []);
 
   // הוספת שוכר חדש ל-Supabase
-  const addTenant = async (tenant: Omit<Tenant, 'id' | 'createdAt'>) => {
+  const addTenant = async (tenant: Omit<Tenant, 'id' | 'createdAt' | 'userId'>) => {
+    // קבל את המשתמש המחובר
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No logged-in user');
+      return;
+    }
+
     const { error } = await supabase.from('tenants').insert([{
       name: tenant.name,
       monthlyrent: Number(tenant.monthlyRent),
@@ -29,7 +36,8 @@ export const useTenants = () => {
       watermeter: Number(tenant.waterMeter),
       electricitymeter: Number(tenant.electricityMeter),
       gasmeter: Number(tenant.gasMeter),
-      // אל תשלח createdAt אם אין עמודה כזו!
+      userid: user.id, // חובה!
+      // createdat: new Date().toISOString(), // לא חובה, יש default
     }]);
     if (!error) {
       await fetchTenants();
