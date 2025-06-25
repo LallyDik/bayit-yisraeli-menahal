@@ -64,7 +64,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     {
       type: 'rent' as PaymentType,
       label: 'שכירות',
-      amount: tenant.monthlyRent || 0,
+      amount: tenant.monthlyRent,
       paid: currentPayment?.rentPaid || 0
     },
     {
