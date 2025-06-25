@@ -9,16 +9,24 @@ import { PaymentManagement } from '@/components/PaymentManagement';
 import { useTenants } from '@/hooks/useTenants';
 import { Tenant } from '@/types';
 
-type ViewMode = 'dashboard' | 'add-tenant' | 'manage-payments';
+type ViewMode = 'dashboard' | 'add-tenant' | 'edit-tenant' | 'manage-payments';
 
 const Index = () => {
-  const { tenants, addTenant, deleteTenant } = useTenants();
+  const { tenants, addTenant, updateTenant, deleteTenant } = useTenants();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
   const handleAddTenant = (tenantData: Omit<Tenant, 'id' | 'createdAt'>) => {
     addTenant(tenantData);
     setViewMode('dashboard');
+  };
+
+  const handleEditTenant = (tenantData: Omit<Tenant, 'id' | 'createdAt'>) => {
+    if (selectedTenant) {
+      updateTenant(selectedTenant.id, tenantData);
+      setViewMode('dashboard');
+      setSelectedTenant(null);
+    }
   };
 
   const handleDeleteTenant = (tenantId: string) => {
@@ -30,6 +38,11 @@ const Index = () => {
   const handleViewPayments = (tenant: Tenant) => {
     setSelectedTenant(tenant);
     setViewMode('manage-payments');
+  };
+
+  const handleEditTenantClick = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setViewMode('edit-tenant');
   };
 
   const totalMonthlyIncome = tenants.reduce((sum, tenant) => 
@@ -57,6 +70,34 @@ const Index = () => {
     );
   }
 
+  if (viewMode === 'edit-tenant' && selectedTenant) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Button 
+              onClick={() => {
+                setViewMode('dashboard');
+                setSelectedTenant(null);
+              }} 
+              variant="outline"
+              className="mb-4"
+            >
+              ← חזור לדשבורד
+            </Button>
+          </div>
+          <div className="flex justify-center">
+            <TenantForm 
+              onSubmit={handleEditTenant} 
+              initialData={selectedTenant}
+              submitLabel="עדכן שוכר"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (viewMode === 'manage-payments' && selectedTenant) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
@@ -67,6 +108,7 @@ const Index = () => {
               setViewMode('dashboard');
               setSelectedTenant(null);
             }}
+            onTenantUpdate={updateTenant}
           />
         </div>
       </div>
@@ -165,6 +207,7 @@ const Index = () => {
                 <TenantCard
                   key={tenant.id}
                   tenant={tenant}
+                  onEdit={handleEditTenantClick}
                   onDelete={handleDeleteTenant}
                   onViewPayments={handleViewPayments}
                 />
