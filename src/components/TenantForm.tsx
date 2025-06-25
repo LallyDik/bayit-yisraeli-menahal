@@ -24,6 +24,10 @@ export const TenantForm: React.FC<TenantFormProps> = ({
     monthlyElectricity: initialData.monthlyElectricity || 0,
     monthlyWater: initialData.monthlyWater || 0,
     monthlyCommittee: initialData.monthlyCommittee || 0,
+    monthlyGas: initialData.monthlyGas || 0,
+    waterMeter: initialData.waterMeter || 0,
+    electricityMeter: initialData.electricityMeter || 0,
+    gasMeter: initialData.gasMeter || 0,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,6 +40,10 @@ export const TenantForm: React.FC<TenantFormProps> = ({
         monthlyElectricity: 0,
         monthlyWater: 0,
         monthlyCommittee: 0,
+        monthlyGas: 0,
+        waterMeter: 0,
+        electricityMeter: 0,
+        gasMeter: 0,
       });
     }
   };
@@ -48,7 +56,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-2xl card-hover">
+    <Card className="w-full max-w-4xl card-hover">
       <CardHeader className="gradient-bg text-white">
         <CardTitle className="flex items-center gap-2 text-xl">
           <Plus className="w-6 h-6" />
@@ -66,71 +74,130 @@ export const TenantForm: React.FC<TenantFormProps> = ({
               type="text"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="הכנס שם השוכר"
               required
               className="text-lg p-3"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="rent" className="text-base font-medium">
-                שכירות חודשית (₪)
-              </Label>
-              <Input
-                id="rent"
-                type="number"
-                value={formData.monthlyRent}
-                onChange={(e) => handleInputChange('monthlyRent', Number(e.target.value))}
-                placeholder="0"
-                min="0"
-                className="text-lg p-3 ltr"
-              />
-            </div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">תשלומים חודשיים</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rent" className="text-base font-medium">
+                  שכירות חודשית (₪)
+                </Label>
+                <Input
+                  id="rent"
+                  type="number"
+                  value={formData.monthlyRent}
+                  onChange={(e) => handleInputChange('monthlyRent', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="electricity" className="text-base font-medium">
-                חשמל חודשי (₪)
-              </Label>
-              <Input
-                id="electricity"
-                type="number"
-                value={formData.monthlyElectricity}
-                onChange={(e) => handleInputChange('monthlyElectricity', Number(e.target.value))}
-                placeholder="0"
-                min="0"
-                className="text-lg p-3 ltr"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="electricity" className="text-base font-medium">
+                  חשמל חודשי (₪)
+                </Label>
+                <Input
+                  id="electricity"
+                  type="number"
+                  value={formData.monthlyElectricity}
+                  onChange={(e) => handleInputChange('monthlyElectricity', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="water" className="text-base font-medium">
-                מים חודשיים (₪)
-              </Label>
-              <Input
-                id="water"
-                type="number"
-                value={formData.monthlyWater}
-                onChange={(e) => handleInputChange('monthlyWater', Number(e.target.value))}
-                placeholder="0"
-                min="0"
-                className="text-lg p-3 ltr"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="water" className="text-base font-medium">
+                  מים חודשיים (₪)
+                </Label>
+                <Input
+                  id="water"
+                  type="number"
+                  value={formData.monthlyWater}
+                  onChange={(e) => handleInputChange('monthlyWater', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="committee" className="text-base font-medium">
-                ועד בית חודשי (₪)
-              </Label>
-              <Input
-                id="committee"
-                type="number"
-                value={formData.monthlyCommittee}
-                onChange={(e) => handleInputChange('monthlyCommittee', Number(e.target.value))}
-                placeholder="0"
-                min="0"
-                className="text-lg p-3 ltr"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="committee" className="text-base font-medium">
+                  ועד בית חודשי (₪)
+                </Label>
+                <Input
+                  id="committee"
+                  type="number"
+                  value={formData.monthlyCommittee}
+                  onChange={(e) => handleInputChange('monthlyCommittee', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gas" className="text-base font-medium">
+                  גז חודשי (₪)
+                </Label>
+                <Input
+                  id="gas"
+                  type="number"
+                  value={formData.monthlyGas}
+                  onChange={(e) => handleInputChange('monthlyGas', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">קריאות מונים</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="waterMeter" className="text-base font-medium">
+                  מונה מים
+                </Label>
+                <Input
+                  id="waterMeter"
+                  type="number"
+                  value={formData.waterMeter}
+                  onChange={(e) => handleInputChange('waterMeter', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="electricityMeter" className="text-base font-medium">
+                  מונה חשמל
+                </Label>
+                <Input
+                  id="electricityMeter"
+                  type="number"
+                  value={formData.electricityMeter}
+                  onChange={(e) => handleInputChange('electricityMeter', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gasMeter" className="text-base font-medium">
+                  מונה גז
+                </Label>
+                <Input
+                  id="gasMeter"
+                  type="number"
+                  value={formData.gasMeter}
+                  onChange={(e) => handleInputChange('gasMeter', Number(e.target.value))}
+                  min="0"
+                  className="text-lg p-3 ltr"
+                />
+              </div>
             </div>
           </div>
 

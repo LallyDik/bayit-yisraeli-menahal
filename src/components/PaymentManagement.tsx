@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Calendar, DollarSign } from 'lucide-react';
 import { Tenant, MonthlyPayment, PaymentType } from '@/types';
-import { getCurrentHebrewDate, getPaymentTypeLabel } from '@/utils/hebrewDates';
+import { getCurrentHebrewDate } from '@/utils/hebrewDates';
 import { usePayments } from '@/hooks/usePayments';
 
 interface PaymentManagementProps {
@@ -31,33 +32,39 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       type: 'rent' as PaymentType,
       label: 'שכירות',
       amount: tenant.monthlyRent,
-      paid: currentPayment?.rentPaid || false
+      paid: currentPayment?.rentPaid || 0
     },
     {
       type: 'electricity' as PaymentType,
       label: 'חשמל',
       amount: tenant.monthlyElectricity,
-      paid: currentPayment?.electricityPaid || false
+      paid: currentPayment?.electricityPaid || 0
     },
     {
       type: 'water' as PaymentType,
       label: 'מים',
       amount: tenant.monthlyWater,
-      paid: currentPayment?.waterPaid || false
+      paid: currentPayment?.waterPaid || 0
     },
     {
       type: 'committee' as PaymentType,
       label: 'ועד בית',
       amount: tenant.monthlyCommittee,
-      paid: currentPayment?.committeePaid || false
+      paid: currentPayment?.committeePaid || 0
+    },
+    {
+      type: 'gas' as PaymentType,
+      label: 'גז',
+      amount: tenant.monthlyGas,
+      paid: currentPayment?.gasPaid || 0
     }
   ];
 
   const totalAmount = paymentItems.reduce((sum, item) => sum + item.amount, 0);
-  const paidAmount = paymentItems.reduce((sum, item) => sum + (item.paid ? item.amount : 0), 0);
-  const unpaidAmount = totalAmount - paidAmount;
+  const paidAmount = paymentItems.reduce((sum, item) => sum + item.paid, 0);
+  const remainingAmount = totalAmount - paidAmount;
 
-  const handlePaymentToggle = (paymentType: PaymentType, checked: boolean) => {
+  const handlePaymentChange = (paymentType: PaymentType, amount: number) => {
     // Create payment record if it doesn't exist
     if (!currentPayment) {
       const newPayment: MonthlyPayment = {
@@ -65,10 +72,11 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         tenantId: tenant.id,
         hebrewMonth: selectedMonth,
         hebrewYear: selectedYear,
-        rentPaid: paymentType === 'rent' ? checked : false,
-        electricityPaid: paymentType === 'electricity' ? checked : false,
-        waterPaid: paymentType === 'water' ? checked : false,
-        committeePaid: paymentType === 'committee' ? checked : false,
+        rentPaid: paymentType === 'rent' ? amount : 0,
+        electricityPaid: paymentType === 'electricity' ? amount : 0,
+        waterPaid: paymentType === 'water' ? amount : 0,
+        committeePaid: paymentType === 'committee' ? amount : 0,
+        gasPaid: paymentType === 'gas' ? amount : 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -78,7 +86,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       localStorage.setItem('payments', JSON.stringify(currentPayments));
       window.location.reload(); // Trigger re-render
     } else {
-      updatePaymentStatus(currentPayment.id, paymentType, checked);
+      updatePaymentStatus(currentPayment.id, paymentType, amount);
     }
   };
 
@@ -122,8 +130,8 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-red-600" />
               <div>
-                <p className="text-sm text-muted-foreground">לא שולם</p>
-                <p className="font-semibold text-red-600">₪{unpaidAmount.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">נשאר לשלם</p>
+                <p className="font-semibold text-red-600">₪{remainingAmount.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -134,34 +142,48 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             פירוט תשלומים
-            <Badge variant={unpaidAmount === 0 ? "default" : "destructive"}>
-              {unpaidAmount === 0 ? "הכל שולם" : `חסר ₪${unpaidAmount.toLocaleString()}`}
+            <Badge variant={remainingAmount === 0 ? "default" : "destructive"}>
+              {remainingAmount === 0 ? "הכל שולם" : `נשאר ₪${remainingAmount.toLocaleString()}`}
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {paymentItems.map((item) => (
-            <div key={item.type} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center gap-4">
-                <Checkbox
-                  checked={item.paid}
-                  onCheckedChange={(checked) => 
-                    handlePaymentToggle(item.type, checked as boolean)
-                  }
-                  className="w-5 h-5"
-                />
-                <div>
-                  <p className="font-medium">{item.label}</p>
-                  <p className="text-sm text-muted-foreground">
-                    ₪{item.amount.toLocaleString()}
-                  </p>
+          {paymentItems.map((item) => {
+            const remaining = item.amount - item.paid;
+            return (
+              <div key={item.type} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{item.label}</p>
+                    <p className="text-sm text-muted-foreground">
+                      סה"כ: ₪{item.amount.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`payment-${item.type}`} className="text-sm">
+                      שולם:
+                    </Label>
+                    <Input
+                      id={`payment-${item.type}`}
+                      type="number"
+                      value={item.paid}
+                      onChange={(e) => 
+                        handlePaymentChange(item.type, Number(e.target.value))
+                      }
+                      min="0"
+                      max={item.amount}
+                      className="w-24 text-sm ltr"
+                    />
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Badge variant={remaining === 0 ? "default" : "secondary"}>
+                    {remaining === 0 ? "הושלם" : `נשאר ₪${remaining.toLocaleString()}`}
+                  </Badge>
                 </div>
               </div>
-              <Badge variant={item.paid ? "default" : "secondary"}>
-                {item.paid ? "שולם" : "לא שולם"}
-              </Badge>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
     </div>

@@ -33,7 +33,7 @@ const Index = () => {
   };
 
   const totalMonthlyIncome = tenants.reduce((sum, tenant) => 
-    sum + tenant.monthlyRent + tenant.monthlyElectricity + tenant.monthlyWater + tenant.monthlyCommittee, 0
+    sum + tenant.monthlyRent + tenant.monthlyElectricity + tenant.monthlyWater + tenant.monthlyCommittee + tenant.monthlyGas, 0
   );
 
   if (viewMode === 'add-tenant') {
@@ -121,8 +121,8 @@ const Index = () => {
                   <Receipt className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{tenants.length * 4}</p>
-                  <p className="text-sm text-muted-foreground">תשלומים חודשיים</p>
+                  <p className="text-2xl font-bold">{tenants.length * 5}</p>
+                  <p className="text-sm text-muted-foreground">כמה נשאר לשלם</p>
                 </div>
               </div>
             </CardContent>

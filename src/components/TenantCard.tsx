@@ -23,7 +23,8 @@ export const TenantCard: React.FC<TenantCardProps> = ({
     tenant.monthlyRent + 
     tenant.monthlyElectricity + 
     tenant.monthlyWater + 
-    tenant.monthlyCommittee;
+    tenant.monthlyCommittee +
+    tenant.monthlyGas;
 
   return (
     <Card className="w-full card-hover">
@@ -58,6 +59,28 @@ export const TenantCard: React.FC<TenantCardProps> = ({
           <div className="flex justify-between">
             <span className="text-muted-foreground">ועד בית:</span>
             <span className="font-semibold">₪{tenant.monthlyCommittee.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">גז:</span>
+            <span className="font-semibold">₪{tenant.monthlyGas.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="border-t pt-3">
+          <h4 className="text-sm font-medium mb-2">קריאות מונים:</h4>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="text-center">
+              <span className="text-muted-foreground block">מים</span>
+              <span className="font-semibold">{tenant.waterMeter}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-muted-foreground block">חשמל</span>
+              <span className="font-semibold">{tenant.electricityMeter}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-muted-foreground block">גז</span>
+              <span className="font-semibold">{tenant.gasMeter}</span>
+            </div>
           </div>
         </div>
 

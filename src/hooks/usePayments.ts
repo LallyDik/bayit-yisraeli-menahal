@@ -21,13 +21,13 @@ export const usePayments = () => {
   const updatePaymentStatus = (
     paymentId: string, 
     paymentType: PaymentType, 
-    status: boolean
+    amount: number
   ) => {
     const updatedPayments = payments.map(payment => {
       if (payment.id === paymentId) {
         return {
           ...payment,
-          [`${paymentType}Paid`]: status,
+          [`${paymentType}Paid`]: amount,
           updatedAt: new Date(),
         };
       }

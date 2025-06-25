@@ -6,6 +6,10 @@ export interface Tenant {
   monthlyElectricity: number;
   monthlyWater: number;
   monthlyCommittee: number;
+  monthlyGas: number;
+  waterMeter: number;
+  electricityMeter: number;
+  gasMeter: number;
   createdAt: Date;
 }
 
@@ -14,15 +18,16 @@ export interface MonthlyPayment {
   tenantId: string;
   hebrewMonth: string;
   hebrewYear: string;
-  rentPaid: boolean;
-  electricityPaid: boolean;
-  waterPaid: boolean;
-  committeePaid: boolean;
+  rentPaid: number;
+  electricityPaid: number;
+  waterPaid: number;
+  committeePaid: number;
+  gasPaid: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type PaymentType = 'rent' | 'electricity' | 'water' | 'committee';
+export type PaymentType = 'rent' | 'electricity' | 'water' | 'committee' | 'gas';
 
 export interface PaymentSummary {
   tenant: Tenant;

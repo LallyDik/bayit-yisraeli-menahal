@@ -31,7 +31,8 @@ export const getPaymentTypeLabel = (type: string): string => {
     rent: 'שכירות',
     electricity: 'חשמל',
     water: 'מים',
-    committee: 'ועד בית'
+    committee: 'ועד בית',
+    gas: 'גז'
   };
   return labels[type as keyof typeof labels] || type;
 };
