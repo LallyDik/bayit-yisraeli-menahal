@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,18 +39,31 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     electricityMeter: tenant.electricityMeter || 0,
     gasMeter: tenant.gasMeter || 0
   });
-  const [editValues, setEditValues] = useState({
-    rentPaid: 0,
-    electricityPaid: 0,
-    waterPaid: 0,
-    committeePaid: 0,
-    gasPaid: 0,
-  });
-  const [saving, setSaving] = useState(false);
 
-  // Get current month payment
+  // --- ערכי תשלום לעריכה ---
   const currentPayment = getPaymentByTenantAndMonth(tenant.id, selectedMonth, selectedYear);
-  
+  const [editValues, setEditValues] = useState({
+    rentPaid: currentPayment?.rentPaid || 0,
+    electricityPaid: currentPayment?.electricityPaid || 0,
+    waterPaid: currentPayment?.waterPaid || 0,
+    committeePaid: currentPayment?.committeePaid || 0,
+    gasPaid: currentPayment?.gasPaid || 0,
+  });
+
+  // אתחול ערכים מחדש אם currentPayment משתנה
+  useEffect(() => {
+    setEditValues({
+      rentPaid: currentPayment?.rentPaid || 0,
+      electricityPaid: currentPayment?.electricityPaid || 0,
+      waterPaid: currentPayment?.waterPaid || 0,
+      committeePaid: currentPayment?.committeePaid || 0,
+      gasPaid: currentPayment?.gasPaid || 0,
+    });
+  }, [currentPayment]);
+
+  // סטייט שמירה נפרד לכל שדה
+  const [saving, setSaving] = useState<{ [key in PaymentType]?: boolean }>({});
+
   // Get previous month payment for debt calculation
   const getPreviousMonthIndex = (currentIndex: number) => {
     return currentIndex === 0 ? 11 : currentIndex - 1;
@@ -63,14 +76,11 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   // Calculate previous month debt
   const calculatePreviousMonthDebt = () => {
     if (!previousMonthPayment) return 0;
-    
-    const totalAmount = (tenant.monthlyRent || 0) + (tenant.monthlyElectricity || 0) + 
-                       (tenant.monthlyWater || 0) + (tenant.monthlyCommittee || 0) + (tenant.monthlyGas || 0);
-    
+    const totalAmount = (tenant.monthlyRent || 0) + (tenant.monthlyElectricity || 0) +
+      (tenant.monthlyWater || 0) + (tenant.monthlyCommittee || 0) + (tenant.monthlyGas || 0);
     const paidAmount = (previousMonthPayment.rentPaid || 0) + (previousMonthPayment.electricityPaid || 0) +
-                      (previousMonthPayment.waterPaid || 0) + (previousMonthPayment.committeePaid || 0) +
-                      (previousMonthPayment.gasPaid || 0);
-    
+      (previousMonthPayment.waterPaid || 0) + (previousMonthPayment.committeePaid || 0) +
+      (previousMonthPayment.gasPaid || 0);
     return Math.max(0, totalAmount - paidAmount);
   };
 
@@ -113,103 +123,11 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   const paidAmount = paymentItems.reduce((sum, item) => sum + item.paid, 0);
   const remainingAmount = totalAmount - paidAmount + previousMonthDebt;
 
-  const handlePaymentChange = async (paymentType: PaymentType, amount: number) => {
-    // Create payment record if it doesn't exist
-    if (!currentPayment) {
-      const newPayment: MonthlyPayment = {
-        id: Date.now().toString(),
-        tenantId: tenant.id,
-        hebrewMonth: selectedMonth,
-        hebrewYear: selectedYear,
-        rentPaid: paymentType === 'rent' ? amount : 0,
-        electricityPaid: paymentType === 'electricity' ? amount : 0,
-        waterPaid: paymentType === 'water' ? amount : 0,
-        committeePaid: paymentType === 'committee' ? amount : 0,
-        gasPaid: paymentType === 'gas' ? amount : 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      const { error } = await supabase
-        .from('payments')
-        .insert([{
-          tenantId: tenant.id,
-          hebrewMonth: selectedMonth,
-          hebrewYear: selectedYear,
-          ...editValues,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }]);
-      if (error) {
-        console.error('Insert error:', error);
-      } else {
-        console.log('Payment inserted successfully');
-      }
-    } else {
-      updatePaymentStatus(currentPayment.id, paymentType, amount);
-    }
-  };
-
   const handleMeterUpdate = () => {
     if (onTenantUpdate) {
       onTenantUpdate(tenant.id, meterValues);
       setEditingMeters(false);
     }
-  };
-
-  const handleChange = (type: keyof typeof editValues, value: number) => {
-    setEditValues((prev) => ({
-      ...prev,
-      [type]: value,
-    }));
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      if (currentPayment) {
-        console.log('Updating payment:', { id: currentPayment.id, ...editValues });
-        const { error } = await supabase
-          .from('payments')
-          .update({
-            ...editValues,
-            updatedAt: new Date().toISOString(),
-          })
-          .eq('id', currentPayment.id);
-        if (error) {
-          console.error('Update error:', error);
-        } else {
-          console.log('Payment updated successfully');
-        }
-      } else {
-        // יצירת תשלום חדש
-        console.log('Inserting new payment:', {
-          tenantId: tenant.id,
-          hebrewMonth: selectedMonth,
-          hebrewYear: selectedYear,
-          ...editValues,
-        });
-        const { error } = await supabase
-          .from('payments')
-          .insert([{
-            tenantId: tenant.id,
-            hebrewMonth: selectedMonth,
-            hebrewYear: selectedYear,
-            ...editValues,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }]);
-        if (error) {
-          console.error('Insert error:', error);
-        } else {
-          console.log('Payment inserted successfully');
-        }
-      }
-      // רענון נתונים אם צריך
-    } catch (e) {
-      console.error('Save error:', e);
-    }
-    setSaving(false);
   };
 
   return (
@@ -401,15 +319,26 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                   />
                   <Button
                     onClick={async () => {
-                      setSaving(true);
-                      await updatePaymentStatus(
-                        currentPayment.id,
-                        item.type,
-                        editValues[`${item.type}Paid`] ?? 0
-                      );
-                      setSaving(false);
+                      setSaving(prev => ({ ...prev, [item.type]: true }));
+                      if (currentPayment) {
+                        await updatePaymentStatus(
+                          currentPayment.id,
+                          item.type,
+                          editValues[`${item.type}Paid`] ?? 0
+                        );
+                      } else {
+                        await supabase.from('payments').insert([{
+                          tenantId: tenant.id,
+                          hebrewMonth: selectedMonth,
+                          hebrewYear: selectedYear,
+                          [`${item.type}Paid`]: editValues[`${item.type}Paid`] ?? 0,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        }]);
+                      }
+                      setSaving(prev => ({ ...prev, [item.type]: false }));
                     }}
-                    disabled={saving}
+                    disabled={!!saving[item.type]}
                     className="ml-2"
                   >
                     שמור
@@ -423,7 +352,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
               </div>
             );
           })}
-          
+
           {previousMonthDebt > 0 && (
             <div className="flex items-center justify-between p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
               <div className="flex items-center gap-4 flex-1">
@@ -507,31 +436,25 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, totalSum }) => 
               }
               className="border rounded px-2 py-1 w-24 text-center"
             />
-            <span className="text-xs text-gray-500">
-              שולם: {editValues[`${type}Paid` as keyof typeof editValues]}
-            </span>
           </div>
         ))}
-      </div>
-      <div className="flex items-center justify-between mt-2">
-        <span>
-          <b>סה״ג שולם:</b> ₪{paidSum}
-        </span>
-        <span>
-          <b>סטטוס:</b>{' '}
-          {totalSum > 0
-            ? paidSum >= totalSum
-              ? 'שולם במלואו'
-              : `שולם חלקית (נשאר ₪${totalSum - paidSum})`
-            : ''}
-        </span>
-        <button
-          className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? 'שומר...' : 'שמור'}
-        </button>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xs text-gray-500">
+            <b>סטטוס:</b>{' '}
+            {totalSum > 0
+              ? paidSum >= totalSum
+                ? 'שולם במלואו'
+                : `שולם חלקית (נשאר ₪${totalSum - paidSum})`
+              : ''}
+          </span>
+          <button
+            className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'שומר...' : 'שמור'}
+          </button>
+        </div>
       </div>
     </div>
   );
