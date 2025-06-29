@@ -9,6 +9,7 @@ import { ArrowRight, Calendar, DollarSign, Settings, AlertCircle } from 'lucide-
 import { Tenant, MonthlyPayment, PaymentType } from '@/types';
 import { getCurrentHebrewDate, HEBREW_MONTHS } from '@/utils/hebrewDates';
 import { usePayments } from '@/hooks/usePayments';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentManagementProps {
   tenant: Tenant;
@@ -29,7 +30,8 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   onBack,
   onTenantUpdate
 }) => {
-  const { payments, updatePaymentStatus, getPaymentByTenantAndMonth } = usePayments();
+  const { payments, updatePaymentStatus, createPayment, getPaymentByTenantAndMonth, refreshPayments } = usePayments();
+  const { toast } = useToast();
   const currentDate = getCurrentHebrewDate();
   const [selectedMonth] = useState(currentDate.month);
   const [selectedYear] = useState(currentDate.year);
@@ -128,6 +130,60 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       onTenantUpdate(tenant.id, meterValues);
       setEditingMeters(false);
     }
+  };
+
+  const handlePaymentSave = async (paymentType: PaymentType) => {
+    setSaving(prev => ({ ...prev, [paymentType]: true }));
+    
+    try {
+      const amount = editValues[`${paymentType}Paid`] ?? 0;
+      
+      if (currentPayment) {
+        // Update existing payment
+        const { error } = await updatePaymentStatus(currentPayment.id, paymentType, amount);
+        if (error) {
+          toast({
+            title: "שגיאה",
+            description: "לא ניתן לעדכן את התשלום",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "נשמר בהצלחה",
+            description: `התשלום עבור ${paymentLabels[paymentType]} עודכן`,
+          });
+        }
+      } else {
+        // Create new payment
+        const { error } = await createPayment({
+          tenantId: tenant.id,
+          hebrewMonth: selectedMonth,
+          hebrewYear: selectedYear,
+          [`${paymentType}Paid`]: amount,
+        });
+        if (error) {
+          toast({
+            title: "שגיאה",
+            description: "לא ניתן ליצור תשלום חדש",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "נשמר בהצלחה",
+            description: `תשלום חדש עבור ${paymentLabels[paymentType]} נוצר`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Payment save error:', error);
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בשמירת התשלום",
+        variant: "destructive",
+      });
+    }
+    
+    setSaving(prev => ({ ...prev, [paymentType]: false }));
   };
 
   return (
@@ -318,30 +374,11 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                     className="w-32 text-sm ltr no-arrows text-center"
                   />
                   <Button
-                    onClick={async () => {
-                      setSaving(prev => ({ ...prev, [item.type]: true }));
-                      if (currentPayment) {
-                        await updatePaymentStatus(
-                          currentPayment.id,
-                          item.type,
-                          editValues[`${item.type}Paid`] ?? 0
-                        );
-                      } else {
-                        await supabase.from('payments').insert([{
-                          tenantId: tenant.id,
-                          hebrewMonth: selectedMonth,
-                          hebrewYear: selectedYear,
-                          [`${item.type}Paid`]: editValues[`${item.type}Paid`] ?? 0,
-                          createdAt: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                        }]);
-                      }
-                      setSaving(prev => ({ ...prev, [item.type]: false }));
-                    }}
+                    onClick={() => handlePaymentSave(item.type)}
                     disabled={!!saving[item.type]}
                     className="ml-2"
                   >
-                    שמור
+                    {saving[item.type] ? 'שומר...' : 'שמור'}
                   </Button>
                 </div>
                 <div className="text-right flex-1 flex justify-end">
