@@ -34,6 +34,8 @@ export const usePayments = () => {
           createdAt: new Date(payment.createdat),
           updatedAt: new Date(payment.updatedat),
         }));
+        
+        console.log('Fetched payments:', mappedPayments);
         setPayments(mappedPayments);
         return mappedPayments;
       }
@@ -55,8 +57,10 @@ export const usePayments = () => {
     amount: number
   ) => {
     try {
+      console.log('Updating payment:', { paymentId, paymentType, amount });
+      
       const updatedAt = new Date().toISOString();
-      const dbFieldName = `${paymentType}paid`; // Convert to lowercase for database
+      const dbFieldName = `${paymentType}paid`;
       
       const { error } = await supabase
         .from('payments')
@@ -71,8 +75,20 @@ export const usePayments = () => {
         return { error };
       }
       
-      // Immediately refresh payments data for synchronization
-      await fetchPayments();
+      console.log('Payment updated successfully, refreshing data...');
+      
+      // Force immediate refresh of payments data
+      const refreshedPayments = await fetchPayments();
+      
+      // Also update local state immediately for better UX
+      setPayments(prevPayments => 
+        prevPayments.map(payment => 
+          payment.id === paymentId 
+            ? { ...payment, [`${paymentType}Paid`]: amount, updatedAt: new Date() }
+            : payment
+        )
+      );
+      
       return { error: null };
     } catch (error) {
       console.error('Error in updatePaymentStatus:', error);
@@ -82,6 +98,8 @@ export const usePayments = () => {
 
   const createPayment = async (paymentData: Partial<MonthlyPayment>) => {
     try {
+      console.log('Creating payment:', paymentData);
+      
       const now = new Date().toISOString();
 
       // Get current user
@@ -113,8 +131,11 @@ export const usePayments = () => {
         return { error };
       }
 
-      // Immediately refresh payments data for synchronization
+      console.log('Payment created successfully, refreshing data...');
+      
+      // Force immediate refresh of payments data
       await fetchPayments();
+      
       return { error: null };
     } catch (error) {
       console.error('Error in createPayment:', error);
@@ -131,12 +152,14 @@ export const usePayments = () => {
     month: string,
     year: string
   ) => {
-    return payments.find(
+    const payment = payments.find(
       payment =>
         payment.tenantId === tenantId &&
         payment.hebrewMonth === month &&
         payment.hebrewYear === year
     );
+    console.log('Found payment for tenant/month:', { tenantId, month, year, payment });
+    return payment;
   };
 
   return {

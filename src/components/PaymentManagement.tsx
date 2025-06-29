@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,10 +41,18 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     gasMeter: tenant.gasMeter || 0
   });
 
-  // Get current payment data
+  // Get current payment data - force refresh when payments change
   const currentPayment = getPaymentByTenantAndMonth(tenant.id, selectedMonth, selectedYear);
   
-  // Initialize payment input values
+  console.log('Current payment for tenant:', { 
+    tenantId: tenant.id, 
+    month: selectedMonth, 
+    year: selectedYear, 
+    currentPayment,
+    allPayments: payments 
+  });
+  
+  // Initialize payment input values - always start with 0 for new entries
   const [editValues, setEditValues] = useState({
     rentPaid: 0,
     electricityPaid: 0,
@@ -54,16 +61,11 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     gasPaid: 0,
   });
 
-  // Update input values when payment data changes
+  // Force refresh of payments data when component mounts or tenant changes
   useEffect(() => {
-    setEditValues({
-      rentPaid: currentPayment?.rentPaid || 0,
-      electricityPaid: currentPayment?.electricityPaid || 0,
-      waterPaid: currentPayment?.waterPaid || 0,
-      committeePaid: currentPayment?.committeePaid || 0,
-      gasPaid: currentPayment?.gasPaid || 0,
-    });
-  }, [currentPayment]);
+    console.log('PaymentManagement mounted or tenant changed, refreshing payments...');
+    refreshPayments();
+  }, [tenant.id, refreshPayments]);
 
   // Separate saving state for each payment type
   const [saving, setSaving] = useState<{ [key in PaymentType]?: boolean }>({});
@@ -144,10 +146,13 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     try {
       const amount = editValues[`${paymentType}Paid`] ?? 0;
       
+      console.log('Saving payment:', { paymentType, amount, currentPayment });
+      
       if (currentPayment) {
         // Update existing payment
         const { error } = await updatePaymentStatus(currentPayment.id, paymentType, amount);
         if (error) {
+          console.error('Update payment error:', error);
           toast({
             title: "שגיאה",
             description: "לא ניתן לעדכן את התשלום",
@@ -173,6 +178,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
           [`${paymentType}Paid`]: amount,
         });
         if (error) {
+          console.error('Create payment error:', error);
           toast({
             title: "שגיאה",
             description: "לא ניתן ליצור תשלום חדש",
@@ -191,7 +197,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         }
       }
       
-      // Refresh payments data to ensure synchronization
+      // Force refresh of payments data to ensure UI updates
       await refreshPayments();
       
     } catch (error) {
