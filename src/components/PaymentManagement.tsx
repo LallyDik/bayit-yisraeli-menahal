@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Calendar, DollarSign, Settings, AlertCircle } from 'lucide-react';
+import { ArrowRight, Calendar, DollarSign, Settings, AlertCircle, CheckCircle } from 'lucide-react';
 import { Tenant, MonthlyPayment, PaymentType } from '@/types';
 import { getCurrentHebrewDate, HEBREW_MONTHS } from '@/utils/hebrewDates';
 import { usePayments } from '@/hooks/usePayments';
@@ -42,17 +42,19 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     gasMeter: tenant.gasMeter || 0
   });
 
-  // --- ערכי תשלום לעריכה ---
+  // Get current payment data
   const currentPayment = getPaymentByTenantAndMonth(tenant.id, selectedMonth, selectedYear);
+  
+  // Initialize payment input values
   const [editValues, setEditValues] = useState({
-    rentPaid: currentPayment?.rentPaid || 0,
-    electricityPaid: currentPayment?.electricityPaid || 0,
-    waterPaid: currentPayment?.waterPaid || 0,
-    committeePaid: currentPayment?.committeePaid || 0,
-    gasPaid: currentPayment?.gasPaid || 0,
+    rentPaid: 0,
+    electricityPaid: 0,
+    waterPaid: 0,
+    committeePaid: 0,
+    gasPaid: 0,
   });
 
-  // אתחול ערכים מחדש אם currentPayment משתנה
+  // Update input values when payment data changes
   useEffect(() => {
     setEditValues({
       rentPaid: currentPayment?.rentPaid || 0,
@@ -63,7 +65,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
     });
   }, [currentPayment]);
 
-  // סטייט שמירה נפרד לכל שדה
+  // Separate saving state for each payment type
   const [saving, setSaving] = useState<{ [key in PaymentType]?: boolean }>({});
 
   // Get previous month payment for debt calculation
@@ -125,10 +127,14 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   const paidAmount = paymentItems.reduce((sum, item) => sum + item.paid, 0);
   const remainingAmount = totalAmount - paidAmount + previousMonthDebt;
 
-  const handleMeterUpdate = () => {
+  const handleMeterUpdate = async () => {
     if (onTenantUpdate) {
       onTenantUpdate(tenant.id, meterValues);
       setEditingMeters(false);
+      toast({
+        title: "נשמר בהצלחה",
+        description: "קריאות המונים עודכנו",
+      });
     }
   };
 
@@ -152,6 +158,11 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
             title: "נשמר בהצלחה",
             description: `התשלום עבור ${paymentLabels[paymentType]} עודכן`,
           });
+          // Clear the input field after successful save
+          setEditValues(prev => ({
+            ...prev,
+            [`${paymentType}Paid`]: 0
+          }));
         }
       } else {
         // Create new payment
@@ -172,8 +183,17 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
             title: "נשמר בהצלחה",
             description: `תשלום חדש עבור ${paymentLabels[paymentType]} נוצר`,
           });
+          // Clear the input field after successful save
+          setEditValues(prev => ({
+            ...prev,
+            [`${paymentType}Paid`]: 0
+          }));
         }
       }
+      
+      // Refresh payments data to ensure synchronization
+      await refreshPayments();
+      
     } catch (error) {
       console.error('Payment save error:', error);
       toast({
@@ -187,61 +207,66 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button onClick={onBack} variant="outline" size="sm">
-          <ArrowRight className="w-4 h-4 ml-2" />
+    <div className="space-y-6 p-4">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button onClick={onBack} variant="outline" size="sm" className="flex items-center gap-2">
+          <ArrowRight className="w-4 h-4" />
           חזור
         </Button>
-        <h2 className="text-2xl font-bold">ניהול תשלומים - {tenant.name}</h2>
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-gray-900">ניהול תשלומים</h2>
+          <p className="text-gray-600">{tenant.name}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-blue-600" />
               <div>
-                <p className="text-sm text-muted-foreground">תקופה נוכחית</p>
-                <p className="font-semibold">{selectedMonth} {selectedYear}</p>
+                <p className="text-sm font-medium text-gray-600">תקופה נוכחית</p>
+                <p className="text-lg font-bold text-gray-900">{selectedMonth} {selectedYear}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-600" />
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">שולם החודש</p>
-                <p className="font-semibold text-green-600">₪{paidAmount.toLocaleString()}</p>
+                <p className="text-sm font-medium text-gray-600">שולם החודש</p>
+                <p className="text-lg font-bold text-green-600">₪{paidAmount.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {previousMonthDebt > 0 && (
-          <Card>
+          <Card className="border-l-4 border-l-orange-500">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-orange-600" />
                 <div>
-                  <p className="text-sm text-muted-foreground">חוב מ{previousMonth}</p>
-                  <p className="font-semibold text-orange-600">₪{previousMonthDebt.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-600">חוב מ{previousMonth}</p>
+                  <p className="text-lg font-bold text-orange-600">₪{previousMonthDebt.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <Card>
+        <Card className="border-l-4 border-l-red-500">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <DollarSign className="w-5 h-5 text-red-600" />
               <div>
-                <p className="text-sm text-muted-foreground">סה"כ נשאר</p>
-                <p className="font-semibold text-red-600">₪{remainingAmount.toLocaleString()}</p>
+                <p className="text-sm font-medium text-gray-600">סה"כ נשאר</p>
+                <p className="text-lg font-bold text-red-600">₪{remainingAmount.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -252,13 +277,14 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            קריאות מונים נוכחיות
+            <span className="text-lg">קריאות מונים נוכחיות</span>
             <Button
               onClick={() => setEditingMeters(!editingMeters)}
               variant="outline"
               size="sm"
+              className="flex items-center gap-2"
             >
-              <Settings className="w-4 h-4 ml-2" />
+              <Settings className="w-4 h-4" />
               {editingMeters ? 'ביטול' : 'עריכה'}
             </Button>
           </CardTitle>
@@ -268,7 +294,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="water-meter">מונה מים</Label>
+                  <Label htmlFor="water-meter" className="text-sm font-medium">מונה מים</Label>
                   <Input
                     id="water-meter"
                     type="number"
@@ -277,12 +303,12 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                       ...prev,
                       waterMeter: Number(e.target.value) || 0
                     }))}
-                    className="ltr no-arrows"
-                    placeholder=""
+                    className="text-center"
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="electricity-meter">מונה חשמל</Label>
+                  <Label htmlFor="electricity-meter" className="text-sm font-medium">מונה חשמל</Label>
                   <Input
                     id="electricity-meter"
                     type="number"
@@ -291,12 +317,12 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                       ...prev,
                       electricityMeter: Number(e.target.value) || 0
                     }))}
-                    className="ltr no-arrows"
-                    placeholder=""
+                    className="text-center"
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gas-meter">מונה גז</Label>
+                  <Label htmlFor="gas-meter" className="text-sm font-medium">מונה גז</Label>
                   <Input
                     id="gas-meter"
                     type="number"
@@ -305,39 +331,40 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
                       ...prev,
                       gasMeter: Number(e.target.value) || 0
                     }))}
-                    className="ltr no-arrows"
-                    placeholder=""
+                    className="text-center"
+                    placeholder="0"
                   />
                 </div>
               </div>
-              <Button onClick={handleMeterUpdate} className="w-full">
+              <Button onClick={handleMeterUpdate} className="w-full bg-blue-600 hover:bg-blue-700">
                 עדכן קריאות מונים
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">מים</p>
-                <p className="text-2xl font-bold">{tenant.waterMeter || 0}</p>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-600 mb-1">מים</p>
+                <p className="text-2xl font-bold text-blue-600">{tenant.waterMeter || 0}</p>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">חשמל</p>
-                <p className="text-2xl font-bold">{tenant.electricityMeter || 0}</p>
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-600 mb-1">חשמל</p>
+                <p className="text-2xl font-bold text-yellow-600">{tenant.electricityMeter || 0}</p>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">גז</p>
-                <p className="text-2xl font-bold">{tenant.gasMeter || 0}</p>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-600 mb-1">גז</p>
+                <p className="text-2xl font-bold text-green-600">{tenant.gasMeter || 0}</p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Payment Details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            פירוט תשלומים - {selectedMonth} {selectedYear}
-            <Badge variant={remainingAmount === 0 ? "default" : "destructive"}>
+            <span className="text-lg">פירוט תשלומים - {selectedMonth} {selectedYear}</span>
+            <Badge variant={remainingAmount === 0 ? "default" : "destructive"} className="text-sm">
               {remainingAmount === 0 ? "הכל שולם" : `נשאר ₪${remainingAmount.toLocaleString()}`}
             </Badge>
           </CardTitle>
@@ -345,62 +372,75 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
         <CardContent className="space-y-4">
           {paymentItems.map((item) => {
             const remaining = item.amount - item.paid;
+            const isFullyPaid = remaining === 0;
+            
             return (
-              <div key={item.type} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">
-                      סה"כ: ₪{item.amount.toLocaleString()}
+              <div key={item.type} className={`p-4 border rounded-lg ${isFullyPaid ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                  {/* Payment Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900">{item.label}</h3>
+                      {isFullyPaid && <CheckCircle className="w-4 h-4 text-green-600" />}
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      סה"כ: ₪{item.amount.toLocaleString()} | שולם: ₪{item.paid.toLocaleString()}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-4 justify-center flex-1">
-                  <Label htmlFor={`payment-${item.type}`} className="text-sm whitespace-nowrap">
-                    שולם:
-                  </Label>
-                  <Input
-                    id={`payment-${item.type}`}
-                    type="number"
-                    value={editValues[`${item.type}Paid`] ?? ""}
-                    onChange={e =>
-                      setEditValues(prev => ({
-                        ...prev,
-                        [`${item.type}Paid`]: Number(e.target.value) || 0,
-                      }))
-                    }
-                    min="0"
-                    max={item.amount}
-                    className="w-32 text-sm ltr no-arrows text-center"
-                  />
-                  <Button
-                    onClick={() => handlePaymentSave(item.type)}
-                    disabled={!!saving[item.type]}
-                    className="ml-2"
-                  >
-                    {saving[item.type] ? 'שומר...' : 'שמור'}
-                  </Button>
-                </div>
-                <div className="text-right flex-1 flex justify-end">
-                  <Badge variant={remaining === 0 ? "default" : "secondary"}>
-                    {remaining === 0 ? "הושלם" : `נשאר ₪${remaining.toLocaleString()}`}
-                  </Badge>
+                  
+                  {/* Payment Input */}
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor={`payment-${item.type}`} className="text-sm font-medium whitespace-nowrap">
+                      תשלום:
+                    </Label>
+                    <Input
+                      id={`payment-${item.type}`}
+                      type="number"
+                      value={editValues[`${item.type}Paid`] || ""}
+                      onChange={e =>
+                        setEditValues(prev => ({
+                          ...prev,
+                          [`${item.type}Paid`]: Number(e.target.value) || 0,
+                        }))
+                      }
+                      min="0"
+                      max={item.amount}
+                      className="w-24 text-center"
+                      placeholder="0"
+                    />
+                    <Button
+                      onClick={() => handlePaymentSave(item.type)}
+                      disabled={!!saving[item.type]}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                    >
+                      {saving[item.type] ? 'שומר...' : 'שמור'}
+                    </Button>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <div className="flex justify-end">
+                    <Badge variant={isFullyPaid ? "default" : "secondary"} className="text-xs">
+                      {isFullyPaid ? "הושלם" : `נשאר ₪${remaining.toLocaleString()}`}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             );
           })}
 
+          {/* Previous Month Debt */}
           {previousMonthDebt > 0 && (
-            <div className="flex items-center justify-between p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-orange-800">חוב מחודש {previousMonth}</p>
-                  <p className="text-sm text-orange-600">
-                    סכום: ₪{previousMonthDebt.toLocaleString()}
-                  </p>
+            <div className="p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <h3 className="font-semibold text-orange-800">חוב מחודש {previousMonth}</h3>
+                    <p className="text-sm text-orange-600">
+                      סכום: ₪{previousMonthDebt.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right flex-1 flex justify-end">
                 <Badge variant="destructive">
                   לטיפול
                 </Badge>
@@ -409,95 +449,6 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
           )}
         </CardContent>
       </Card>
-
-      {/* Payment Row Component - For Editing Payments */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4">עריכת תשלומים</h3>
-        {payments.map((payment) => (
-          <PaymentRow key={payment.id} payment={payment} totalSum={totalAmount} />
-        ))}
-      </div>
     </div>
   );
-};
-
-export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, totalSum }) => {
-  const [editValues, setEditValues] = useState({
-    rentPaid: payment.rentPaid,
-    electricityPaid: payment.electricityPaid,
-    waterPaid: payment.waterPaid,
-    committeePaid: payment.committeePaid,
-    gasPaid: payment.gasPaid,
-  });
-  const [saving, setSaving] = useState(false);
-
-  const paidSum =
-    editValues.rentPaid +
-    editValues.electricityPaid +
-    editValues.waterPaid +
-    editValues.committeePaid +
-    editValues.gasPaid;
-
-  const handleChange = (type: keyof typeof editValues, value: number) => {
-    setEditValues((prev) => ({
-      ...prev,
-      [type]: value,
-    }));
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await supabase
-      .from('payments')
-      .update({
-        ...editValues,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', payment.id);
-    setSaving(false);
-    // אפשר להוסיף הודעת הצלחה
-  };
-
-  return (
-    <div className="border rounded-lg p-4 mb-2">
-      <div className="flex flex-col gap-2">
-        {Object.entries(paymentLabels).map(([type, label]) => (
-          <div key={type} className="flex items-center gap-2">
-            <span className="w-20">{label}:</span>
-            <input
-              type="number"
-              min={0}
-              value={editValues[`${type}Paid` as keyof typeof editValues]}
-              onChange={e =>
-                handleChange(`${type}Paid` as keyof typeof editValues, Number(e.target.value) || 0)
-              }
-              className="border rounded px-2 py-1 w-24 text-center"
-            />
-          </div>
-        ))}
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-gray-500">
-            <b>סטטוס:</b>{' '}
-            {totalSum > 0
-              ? paidSum >= totalSum
-                ? 'שולם במלואו'
-                : `שולם חלקית (נשאר ₪${totalSum - paidSum})`
-              : ''}
-          </span>
-          <button
-            className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'שומר...' : 'שמור'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-type PaymentRowProps = {
-  payment: MonthlyPayment;
-  totalSum: number; // סכום יעד לחודש הזה
 };
