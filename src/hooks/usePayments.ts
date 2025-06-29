@@ -12,12 +12,26 @@ export const usePayments = () => {
     try {
       const { data, error } = await supabase
         .from('payments')
-        .select('id, tenantId, hebrewMonth, hebrewYear, rentPaid, electricityPaid, waterPaid, committeePaid, gasPaid, createdAt, updatedAt');
+        .select('id, tenantid, hebrewmonth, hebrewyear, rentpaid, electricitypaid, waterpaid, committeepaid, gaspaid, createdat, updatedat');
       
       if (error) {
         console.error('Error fetching payments:', error);
       } else if (data) {
-        setPayments(data as MonthlyPayment[]);
+        // Map database column names to our TypeScript interface
+        const mappedPayments = data.map(payment => ({
+          id: payment.id,
+          tenantId: payment.tenantid,
+          hebrewMonth: payment.hebrewmonth,
+          hebrewYear: payment.hebrewyear,
+          rentPaid: payment.rentpaid || 0,
+          electricityPaid: payment.electricitypaid || 0,
+          waterPaid: payment.waterpaid || 0,
+          committeePaid: payment.committeepaid || 0,
+          gasPaid: payment.gaspaid || 0,
+          createdAt: new Date(payment.createdat),
+          updatedAt: new Date(payment.updatedat),
+        }));
+        setPayments(mappedPayments);
       }
     } catch (error) {
       console.error('Error in fetchPayments:', error);
@@ -36,9 +50,10 @@ export const usePayments = () => {
   ) => {
     try {
       const updatedAt = new Date().toISOString();
+      const dbFieldName = `${paymentType}paid`; // Convert to lowercase for database
       const { error } = await supabase
         .from('payments')
-        .update({ [`${paymentType}Paid`]: amount, updatedAt })
+        .update({ [dbFieldName]: amount, updatedat: updatedAt })
         .eq('id', paymentId);
       
       if (error) {
@@ -57,13 +72,23 @@ export const usePayments = () => {
 
   const createPayment = async (paymentData: Partial<MonthlyPayment>) => {
     try {
+      const now = new Date().toISOString();
+      const dbPaymentData = {
+        tenantid: paymentData.tenantId,
+        hebrewmonth: paymentData.hebrewMonth,
+        hebrewyear: paymentData.hebrewYear,
+        rentpaid: paymentData.rentPaid || 0,
+        electricitypaid: paymentData.electricityPaid || 0,
+        waterpaid: paymentData.waterPaid || 0,
+        committeepaid: paymentData.committeePaid || 0,
+        gaspaid: paymentData.gasPaid || 0,
+        createdat: now,
+        updatedat: now,
+      };
+
       const { error } = await supabase
         .from('payments')
-        .insert([{
-          ...paymentData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }]);
+        .insert([dbPaymentData]);
       
       if (error) {
         console.error('Error creating payment:', error);
