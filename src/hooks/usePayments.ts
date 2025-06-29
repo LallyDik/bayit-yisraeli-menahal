@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MonthlyPayment, PaymentType } from '@/types';
 import { supabase } from '@/supabaseClient';
@@ -35,7 +34,6 @@ export const usePayments = () => {
           updatedAt: new Date(payment.updatedat),
         }));
         
-        console.log('Fetched payments:', mappedPayments);
         setPayments(mappedPayments);
         return mappedPayments;
       }
@@ -49,7 +47,7 @@ export const usePayments = () => {
 
   useEffect(() => {
     fetchPayments();
-  }, []);
+  }, []); // זה תקין, ירוץ רק פעם אחת
 
   const updatePaymentStatus = async (
     paymentId: string,
@@ -74,8 +72,6 @@ export const usePayments = () => {
         console.error('Error updating payment:', error);
         return { error };
       }
-      
-      console.log('Payment updated successfully, refreshing data...');
       
       // Force immediate refresh of payments data
       const refreshedPayments = await fetchPayments();
@@ -131,8 +127,6 @@ export const usePayments = () => {
         return { error };
       }
 
-      console.log('Payment created successfully, refreshing data...');
-      
       // Force immediate refresh of payments data
       await fetchPayments();
       

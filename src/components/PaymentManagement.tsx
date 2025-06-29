@@ -65,7 +65,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({
   useEffect(() => {
     console.log('PaymentManagement mounted or tenant changed, refreshing payments...');
     refreshPayments();
-  }, [tenant.id, refreshPayments]);
+  }, [tenant.id]);
 
   // Separate saving state for each payment type
   const [saving, setSaving] = useState<{ [key in PaymentType]?: boolean }>({});
