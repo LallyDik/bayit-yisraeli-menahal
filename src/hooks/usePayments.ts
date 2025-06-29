@@ -71,38 +71,46 @@ export const usePayments = () => {
   };
 
   const createPayment = async (paymentData: Partial<MonthlyPayment>) => {
-    try {
-      const now = new Date().toISOString();
-      const dbPaymentData = {
-        tenantid: paymentData.tenantId,
-        hebrewmonth: paymentData.hebrewMonth,
-        hebrewyear: paymentData.hebrewYear,
-        rentpaid: paymentData.rentPaid || 0,
-        electricitypaid: paymentData.electricityPaid || 0,
-        waterpaid: paymentData.waterPaid || 0,
-        committeepaid: paymentData.committeePaid || 0,
-        gaspaid: paymentData.gasPaid || 0,
-        createdat: now,
-        updatedat: now,
-      };
+  try {
+    const now = new Date().toISOString();
 
-      const { error } = await supabase
-        .from('payments')
-        .insert([dbPaymentData]);
-      
-      if (error) {
-        console.error('Error creating payment:', error);
-        return { error };
-      }
-      
-      // Refresh payments immediately after creation
-      await fetchPayments();
-      return { error: null };
-    } catch (error) {
-      console.error('Error in createPayment:', error);
+    // שליפת המשתמש הנוכחי
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user?.id) {
+      throw new Error('לא ניתן לאחזר משתמש מחובר');
+    }
+
+    const dbPaymentData = {
+      tenantid: paymentData.tenantId,
+      hebrewmonth: paymentData.hebrewMonth,
+      hebrewyear: paymentData.hebrewYear,
+      rentpaid: paymentData.rentPaid || 0,
+      electricitypaid: paymentData.electricityPaid || 0,
+      waterpaid: paymentData.waterPaid || 0,
+      committeepaid: paymentData.committeePaid || 0,
+      gaspaid: paymentData.gasPaid || 0,
+      createdat: now,
+      updatedat: now,
+      userid: userData.user.id, // ✅ תוספת נדרשת
+    };
+
+    const { error } = await supabase
+      .from('payments')
+      .insert([dbPaymentData]);
+
+    if (error) {
+      console.error('Error creating payment:', error);
       return { error };
     }
-  };
+
+    await fetchPayments();
+    return { error: null };
+  } catch (error) {
+    console.error('Error in createPayment:', error);
+    return { error };
+  }
+};
+
 
   const getPaymentsByTenant = (tenantId: string) => {
     return payments.filter(payment => payment.tenantId === tenantId);
