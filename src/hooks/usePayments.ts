@@ -1,44 +1,43 @@
 import { useState, useEffect } from 'react';
 import { MonthlyPayment, PaymentType } from '@/types';
-import { supabase } from '@/supabaseClient';
+import { paymentsApi } from '@/services/googleSheetsApi';
+import { useAuth } from '@/hooks/useAuth';
+
+function normalizePayment(payment: any): MonthlyPayment {
+  return {
+    id: payment.id,
+    tenantId: payment.tenantId,
+    hebrewMonth: payment.hebrewMonth,
+    hebrewYear: payment.hebrewYear,
+    rentPaid: Number(payment.rentPaid) || 0,
+    electricityPaid: Number(payment.electricityPaid) || 0,
+    waterPaid: Number(payment.waterPaid) || 0,
+    committeePaid: Number(payment.committeePaid) || 0,
+    gasPaid: Number(payment.gasPaid) || 0,
+    createdAt: payment.createdAt ? new Date(payment.createdAt) : new Date(),
+    updatedAt: payment.updatedAt ? new Date(payment.updatedAt) : new Date(),
+  };
+}
 
 export const usePayments = () => {
   const [payments, setPayments] = useState<MonthlyPayment[]>([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const fetchPayments = async () => {
+    if (!user) return [];
+    
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('payments')
-        .select('id, tenantid, hebrewmonth, hebrewyear, rentpaid, electricitypaid, waterpaid, committeepaid, gaspaid, createdat, updatedat');
-      
-      if (error) {
-        console.error('Error fetching payments:', error);
-        return [];
-      } 
-      
-      if (data) {
-        // Map database column names to our TypeScript interface
-        const mappedPayments = data.map(payment => ({
-          id: payment.id,
-          tenantId: payment.tenantid,
-          hebrewMonth: payment.hebrewmonth,
-          hebrewYear: payment.hebrewyear,
-          rentPaid: payment.rentpaid || 0,
-          electricityPaid: payment.electricitypaid || 0,
-          waterPaid: payment.waterpaid || 0,
-          committeePaid: payment.committeepaid || 0,
-          gasPaid: payment.gaspaid || 0,
-          createdAt: new Date(payment.createdat),
-          updatedAt: new Date(payment.updatedat),
-        }));
-        
+      const result = await paymentsApi.getAll(user.id);
+      if (result.payments) {
+        const mappedPayments = (result.payments as any[]).map(normalizePayment);
         setPayments(mappedPayments);
         return mappedPayments;
       }
+      return [];
     } catch (error) {
-      console.error('Error in fetchPayments:', error);
+      console.error('Error fetching payments:', error);
       return [];
     } finally {
       setLoading(false);
@@ -46,8 +45,10 @@ export const usePayments = () => {
   };
 
   useEffect(() => {
-    fetchPayments();
-  }, []); // זה תקין, ירוץ רק פעם אחת
+    if (user) {
+      fetchPayments();
+    }
+  }, [user]);
 
   const updatePaymentStatus = async (
     paymentId: string,
@@ -57,24 +58,18 @@ export const usePayments = () => {
     try {
       console.log('Updating payment:', { paymentId, paymentType, amount });
       
-      const updatedAt = new Date().toISOString();
-      const dbFieldName = `${paymentType}paid`;
+      const updateData: any = { id: paymentId };
+      updateData[`${paymentType}Paid`] = amount;
       
-      const { error } = await supabase
-        .from('payments')
-        .update({ 
-          [dbFieldName]: amount, 
-          updatedat: updatedAt 
-        })
-        .eq('id', paymentId);
+      const result = await paymentsApi.update(updateData);
       
-      if (error) {
-        console.error('Error updating payment:', error);
-        return { error };
+      if (result.error) {
+        console.error('Error updating payment:', result.error);
+        return { error: result.error };
       }
       
-      // Force immediate refresh of payments data
-      const refreshedPayments = await fetchPayments();
+      // Refresh payments data
+      await fetchPayments();
       
       // Also update local state immediately for better UX
       setPayments(prevPayments => 
@@ -93,41 +88,31 @@ export const usePayments = () => {
   };
 
   const createPayment = async (paymentData: Partial<MonthlyPayment>) => {
+    if (!user) {
+      return { error: 'לא ניתן לאחזר משתמש מחובר' };
+    }
+    
     try {
       console.log('Creating payment:', paymentData);
       
-      const now = new Date().toISOString();
+      const result = await paymentsApi.create({
+        tenantId: paymentData.tenantId,
+        userId: user.id,
+        hebrewMonth: paymentData.hebrewMonth,
+        hebrewYear: paymentData.hebrewYear,
+        rentPaid: paymentData.rentPaid || 0,
+        electricityPaid: paymentData.electricityPaid || 0,
+        waterPaid: paymentData.waterPaid || 0,
+        committeePaid: paymentData.committeePaid || 0,
+        gasPaid: paymentData.gasPaid || 0,
+      });
 
-      // Get current user
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user?.id) {
-        throw new Error('לא ניתן לאחזר משתמש מחובר');
+      if (result.error) {
+        console.error('Error creating payment:', result.error);
+        return { error: result.error };
       }
 
-      const dbPaymentData = {
-        tenantid: paymentData.tenantId,
-        hebrewmonth: paymentData.hebrewMonth,
-        hebrewyear: paymentData.hebrewYear,
-        rentpaid: paymentData.rentPaid || 0,
-        electricitypaid: paymentData.electricityPaid || 0,
-        waterpaid: paymentData.waterPaid || 0,
-        committeepaid: paymentData.committeePaid || 0,
-        gaspaid: paymentData.gasPaid || 0,
-        createdat: now,
-        updatedat: now,
-        userid: userData.user.id,
-      };
-
-      const { error } = await supabase
-        .from('payments')
-        .insert([dbPaymentData]);
-
-      if (error) {
-        console.error('Error creating payment:', error);
-        return { error };
-      }
-
-      // Force immediate refresh of payments data
+      // Refresh payments data
       await fetchPayments();
       
       return { error: null };

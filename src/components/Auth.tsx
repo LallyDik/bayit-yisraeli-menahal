@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { GoogleSheetsSetup } from '@/components/GoogleSheetsSetup';
+import { getScriptUrl } from '@/services/googleSheetsApi';
 
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(!!getScriptUrl());
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
@@ -45,6 +47,11 @@ export const Auth = () => {
     }
   };
 
+  // אם לא הוגדר Google Sheets, הצג את מסך ההגדרה
+  if (!isConfigured) {
+    return <GoogleSheetsSetup onComplete={() => setIsConfigured(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
@@ -54,6 +61,9 @@ export const Auth = () => {
           </CardTitle>
           <p className="text-muted-foreground">
             {isLogin ? 'התחבר לחשבון שלך' : 'צור חשבון חדש'}
+          </p>
+          <p className="text-xs text-green-600 mt-2">
+            ✓ מחובר ל-Google Sheets
           </p>
         </CardHeader>
         <CardContent>
@@ -98,6 +108,19 @@ export const Auth = () => {
               className="text-primary"
             >
               {isLogin ? 'אין לך חשבון? צור חשבון חדש' : 'יש לך חשבון? התחבר'}
+            </Button>
+          </div>
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                localStorage.removeItem('googleScriptUrl');
+                setIsConfigured(false);
+              }}
+              className="text-xs text-muted-foreground"
+            >
+              שנה הגדרות Google Sheets
             </Button>
           </div>
         </CardContent>

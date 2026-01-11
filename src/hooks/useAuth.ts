@@ -1,11 +1,5 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = 'https://sdjgcirhmvlihgoafxxi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdjaXJobXZsaWhnb2FmeHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MzczMDUsImV4cCI6MjA2NjQxMzMwNX0.E0-iz3bJ_qu-YNXSiothblVpxs9luiCaaR-jOpODPTo';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { authApi, getScriptUrl } from '@/services/googleSheetsApi';
 
 interface User {
   id: string;
@@ -18,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  isConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,42 +28,56 @@ export const useAuth = () => {
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email! } : null);
-      setLoading(false);
-    });
-
-    // Listen for changes on auth state (logged in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email! } : null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // בדוק אם יש URL מוגדר
+    const scriptUrl = getScriptUrl();
+    setIsConfigured(!!scriptUrl);
+    
+    // בדוק אם יש משתמש שמור ב-localStorage
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('currentUser');
+      }
+    }
+    setLoading(false);
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    const result = await authApi.signIn(email, password);
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    
+    if (result.user) {
+      const userData = result.user as User;
+      setUser(userData);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) throw error;
+    const result = await authApi.signUp(email, password);
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    
+    if (result.user) {
+      const userData = result.user as User;
+      setUser(userData);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    setUser(null);
+    localStorage.removeItem('currentUser');
   };
 
   return {
@@ -77,6 +86,7 @@ export const useAuthProvider = () => {
     signIn,
     signUp,
     signOut,
+    isConfigured,
   };
 };
 
