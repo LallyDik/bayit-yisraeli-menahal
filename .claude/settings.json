@@ -1,4 +1,7 @@
 {
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
   "permissions": {
     "deny": [
       "mcp__supabase-branch"
