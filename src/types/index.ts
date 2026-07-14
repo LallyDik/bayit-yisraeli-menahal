@@ -1,36 +1,9 @@
+import type { Database } from '@/types/database';
 
-export interface Tenant {
-  id: string;
-  name: string;
-  monthlyRent: number;
-  monthlyElectricity: number;
-  monthlyWater: number;
-  monthlyCommittee: number;
-  monthlyGas: number;
-  waterMeter: number;
-  electricityMeter: number;
-  gasMeter: number;
-  createdAt: Date;
-}
+export type Unit = Database['public']['Tables']['units']['Row'];
+export type Tenant = Database['public']['Tables']['tenants']['Row'];
+export type Tenancy = Database['public']['Tables']['tenancies']['Row'];
 
-export interface MonthlyPayment {
-  id: string;
-  tenantId: string;
-  hebrewMonth: string;
-  hebrewYear: string;
-  rentPaid: number;
-  electricityPaid: number;
-  waterPaid: number;
-  committeePaid: number;
-  gasPaid: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type PaymentType = 'rent' | 'electricity' | 'water' | 'committee' | 'gas';
-
-export interface PaymentSummary {
-  tenant: Tenant;
-  unpaidItems: PaymentType[];
-  totalUnpaid: number;
-}
+export type UnitInsert = Database['public']['Tables']['units']['Insert'];
+export type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
+export type TenancyInsert = Database['public']['Tables']['tenancies']['Insert'];

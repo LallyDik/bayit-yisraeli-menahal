@@ -1,10 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { authApi, getScriptUrl } from '@/services/googleSheetsApi';
-
-interface User {
-  id: string;
-  email: string;
-}
+import type { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -12,7 +8,6 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  isConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,69 +20,39 @@ export const useAuth = () => {
   return context;
 };
 
-export const useAuthProvider = () => {
+export const useAuthProvider = (): AuthContextType => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
-    // בדוק אם יש URL מוגדר
-    const scriptUrl = getScriptUrl();
-    setIsConfigured(!!scriptUrl);
-    
-    // בדוק אם יש משתמש שמור ב-localStorage
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('currentUser');
-      }
-    }
-    setLoading(false);
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const result = await authApi.signIn(email, password);
-    
-    if (result.error) {
-      throw new Error(result.error);
-    }
-    
-    if (result.user) {
-      const userData = result.user as User;
-      setUser(userData);
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
   };
 
   const signUp = async (email: string, password: string) => {
-    const result = await authApi.signUp(email, password);
-    
-    if (result.error) {
-      throw new Error(result.error);
-    }
-    
-    if (result.user) {
-      const userData = result.user as User;
-      setUser(userData);
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-    }
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
   };
 
   const signOut = async () => {
-    setUser(null);
-    localStorage.removeItem('currentUser');
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   };
 
-  return {
-    user,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    isConfigured,
-  };
+  return { user, loading, signIn, signUp, signOut };
 };
 
 export { AuthContext };
