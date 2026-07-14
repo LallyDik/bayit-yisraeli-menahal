@@ -8,6 +8,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
+import { AttachmentsSection } from '@/components/AttachmentsSection';
 import type { Tenant, Unit } from '@/types';
 
 // Sentinel for "no unit" — Radix Select rejects an empty-string item value,
@@ -159,6 +160,8 @@ export const TenantForm: React.FC<TenantFormProps> = ({
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
+
+          {initialData.id && <AttachmentsSection tenantId={initialData.id} />}
 
           <Button type="submit" className="w-full text-lg py-3 gradient-bg hover:opacity-90">
             {submitLabel}

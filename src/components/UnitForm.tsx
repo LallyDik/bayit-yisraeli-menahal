@@ -8,6 +8,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
+import { AttachmentsSection } from '@/components/AttachmentsSection';
 import type { Unit } from '@/types';
 
 // Sentinel for "not specified" — Radix Select rejects an empty-string item
@@ -197,6 +198,8 @@ export const UnitForm: React.FC<UnitFormProps> = ({
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
+
+          {initialData.id && <AttachmentsSection unitId={initialData.id} />}
 
           <Button type="submit" className="w-full text-lg py-3 gradient-bg hover:opacity-90">
             {submitLabel}

@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          file_name: string
+          id: string
+          owner_id: string
+          size_bytes: number | null
+          storage_path: string
+          tenant_id: string | null
+          unit_id: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          owner_id?: string
+          size_bytes?: number | null
+          storage_path: string
+          tenant_id?: string | null
+          unit_id?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          owner_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          tenant_id?: string | null
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_tenant_id_owner_id_fkey"
+            columns: ["tenant_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "attachments_unit_id_owner_id_fkey"
+            columns: ["unit_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       tenancies: {
         Row: {
           created_at: string
