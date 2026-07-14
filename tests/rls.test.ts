@@ -139,4 +139,18 @@ describe('schema invariants', () => {
     const { error } = await alice.from('units').delete().eq('id', aliceUnitId).select();
     expect(error).not.toBeNull(); // on delete restrict
   });
+
+  it('rejects a unit condition outside the fixed list', async () => {
+    const { error } = await alice.from('units').insert({
+      name: `alice-badcond-${run}`,
+      condition: 'גרוע',
+    });
+    expect(error).not.toBeNull();
+
+    const { error: okErr } = await alice.from('units').insert({
+      name: `alice-goodcond-${run}`,
+      condition: 'משופץ',
+    });
+    expect(okErr).toBeNull();
+  });
 });

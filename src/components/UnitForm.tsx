@@ -4,8 +4,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import type { Unit } from '@/types';
+
+// Sentinel for "not specified" — Radix Select rejects an empty-string item
+// value, and we need an explicit, selectable option to represent null
+// (not just an unset/placeholder state).
+const NOT_SPECIFIED = 'not-specified';
+const CONDITIONS = ['חדש', 'משופץ', 'טוב', 'דורש שיפוץ'] as const;
 
 interface UnitFormProps {
   onSubmit: (values: {
@@ -13,6 +22,12 @@ interface UnitFormProps {
     default_rent: number | null;
     description: string | null;
     notes: string | null;
+    area_sqm: number | null;
+    rooms: number | null;
+    condition: string | null;
+    year_built: number | null;
+    last_renovation: number | null;
+    air_conditioned: boolean | null;
   }) => void;
   initialData?: Partial<Unit>;
   submitLabel?: string;
@@ -25,6 +40,14 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 }) => {
   const [name, setName] = useState(initialData.name ?? '');
   const [rent, setRent] = useState(initialData.default_rent?.toString() ?? '');
+  const [areaSqm, setAreaSqm] = useState(initialData.area_sqm?.toString() ?? '');
+  const [rooms, setRooms] = useState(initialData.rooms?.toString() ?? '');
+  const [condition, setCondition] = useState(initialData.condition ?? NOT_SPECIFIED);
+  const [yearBuilt, setYearBuilt] = useState(initialData.year_built?.toString() ?? '');
+  const [lastRenovation, setLastRenovation] = useState(initialData.last_renovation?.toString() ?? '');
+  const [airConditioned, setAirConditioned] = useState(
+    initialData.air_conditioned == null ? NOT_SPECIFIED : (initialData.air_conditioned ? 'yes' : 'no'),
+  );
   const [description, setDescription] = useState(initialData.description ?? '');
   const [notes, setNotes] = useState(initialData.notes ?? '');
 
@@ -36,6 +59,12 @@ export const UnitForm: React.FC<UnitFormProps> = ({
       default_rent: rent === '' ? null : Number(rent),
       description: description.trim() === '' ? null : description.trim(),
       notes: notes.trim() === '' ? null : notes.trim(),
+      area_sqm: areaSqm === '' ? null : Number(areaSqm),
+      rooms: rooms === '' ? null : Number(rooms),
+      condition: condition === NOT_SPECIFIED ? null : condition,
+      year_built: yearBuilt === '' ? null : Number(yearBuilt),
+      last_renovation: lastRenovation === '' ? null : Number(lastRenovation),
+      air_conditioned: airConditioned === NOT_SPECIFIED ? null : airConditioned === 'yes',
     });
   };
 
@@ -72,6 +101,68 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             <p className="text-sm text-muted-foreground">
               משמש רק כברירת מחדל בטופס כששוכר חדש נכנס. שינוי כאן לא ישנה את מה שסוכם עם שוכר קיים.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="unit-area" className="text-base font-medium">מ"ר — אופציונלי</Label>
+              <Input
+                id="unit-area" type="number" min="1" step="0.5" value={areaSqm} className="text-lg p-3 ltr"
+                onChange={(e) => setAreaSqm(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit-rooms" className="text-base font-medium">חדרים — אופציונלי</Label>
+              <Input
+                id="unit-rooms" type="number" min="0.5" step="0.5" value={rooms} className="text-lg p-3 ltr"
+                onChange={(e) => setRooms(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-base font-medium">מצב — אופציונלי</Label>
+              <Select value={condition} onValueChange={setCondition}>
+                <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
+                  {CONDITIONS.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-base font-medium">ממוזגת — אופציונלי</Label>
+              <Select value={airConditioned} onValueChange={setAirConditioned}>
+                <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
+                  <SelectItem value="yes">כן</SelectItem>
+                  <SelectItem value="no">לא</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit-year-built" className="text-base font-medium">שנת בנייה — אופציונלי</Label>
+              <Input
+                id="unit-year-built" type="number" min="1800" max="2100" value={yearBuilt} className="text-lg p-3 ltr"
+                onChange={(e) => setYearBuilt(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit-last-renovation" className="text-base font-medium">
+                שיפוץ אחרון (שנה) — אופציונלי
+              </Label>
+              <Input
+                id="unit-last-renovation" type="number" min="1800" max="2100" value={lastRenovation}
+                className="text-lg p-3 ltr"
+                onChange={(e) => setLastRenovation(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

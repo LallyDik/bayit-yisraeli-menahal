@@ -100,34 +100,52 @@ export type Database = {
       }
       units: {
         Row: {
+          air_conditioned: boolean | null
           archived_at: string | null
+          area_sqm: number | null
+          condition: string | null
           created_at: string
           default_rent: number | null
           description: string | null
           id: string
+          last_renovation: number | null
           name: string
           notes: string | null
           owner_id: string
+          rooms: number | null
+          year_built: number | null
         }
         Insert: {
+          air_conditioned?: boolean | null
           archived_at?: string | null
+          area_sqm?: number | null
+          condition?: string | null
           created_at?: string
           default_rent?: number | null
           description?: string | null
           id?: string
+          last_renovation?: number | null
           name: string
           notes?: string | null
           owner_id?: string
+          rooms?: number | null
+          year_built?: number | null
         }
         Update: {
+          air_conditioned?: boolean | null
           archived_at?: string | null
+          area_sqm?: number | null
+          condition?: string | null
           created_at?: string
           default_rent?: number | null
           description?: string | null
           id?: string
+          last_renovation?: number | null
           name?: string
           notes?: string | null
           owner_id?: string
+          rooms?: number | null
+          year_built?: number | null
         }
         Relationships: []
       }
