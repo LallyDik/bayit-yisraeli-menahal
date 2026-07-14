@@ -5,26 +5,28 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
-import type { Unit } from '@/types';
+import type { Tenant } from '@/types';
 
-interface UnitFormProps {
+interface TenantFormProps {
   onSubmit: (values: {
     name: string;
-    default_rent: number | null;
+    phone: string | null;
+    email: string | null;
     description: string | null;
     notes: string | null;
   }) => void;
-  initialData?: Partial<Unit>;
+  initialData?: Partial<Tenant>;
   submitLabel?: string;
 }
 
-export const UnitForm: React.FC<UnitFormProps> = ({
+export const TenantForm: React.FC<TenantFormProps> = ({
   onSubmit,
   initialData = {},
-  submitLabel = 'הוסף יחידה',
+  submitLabel = 'הוסף שוכר',
 }) => {
   const [name, setName] = useState(initialData.name ?? '');
-  const [rent, setRent] = useState(initialData.default_rent?.toString() ?? '');
+  const [phone, setPhone] = useState(initialData.phone ?? '');
+  const [email, setEmail] = useState(initialData.email ?? '');
   const [description, setDescription] = useState(initialData.description ?? '');
   const [notes, setNotes] = useState(initialData.notes ?? '');
 
@@ -33,7 +35,8 @@ export const UnitForm: React.FC<UnitFormProps> = ({
     if (!name.trim()) return;
     onSubmit({
       name: name.trim(),
-      default_rent: rent === '' ? null : Number(rent),
+      phone: phone.trim() === '' ? null : phone.trim(),
+      email: email.trim() === '' ? null : email.trim(),
       description: description.trim() === '' ? null : description.trim(),
       notes: notes.trim() === '' ? null : notes.trim(),
     });
@@ -50,42 +53,45 @@ export const UnitForm: React.FC<UnitFormProps> = ({
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="unit-name" className="text-lg font-medium">שם היחידה</Label>
+            <Label htmlFor="tenant-name" className="text-lg font-medium">שם השוכר</Label>
             <Input
-              id="unit-name" value={name} required className="text-lg p-3"
+              id="tenant-name" value={name} required className="text-lg p-3"
               onChange={(e) => setName(e.target.value)}
-              placeholder="לדוגמה: דירה 3, קומה ב'"
             />
             <p className="text-sm text-muted-foreground">
-              זה כל מה שצריך כדי לפתוח יחידה. אפשר להשלים את השאר מתי שתרצה.
+              זה כל מה שצריך. את השיוך ליחידה ואת שכר הדירה מגדירים בשלב הבא.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="unit-rent" className="text-base font-medium">
-              שכר דירה מבוקש (₪) — אופציונלי
-            </Label>
+            <Label htmlFor="tenant-phone" className="text-base font-medium">טלפון — אופציונלי</Label>
             <Input
-              id="unit-rent" type="number" min="0" value={rent} className="text-lg p-3 ltr"
-              onChange={(e) => setRent(e.target.value)}
+              id="tenant-phone" type="tel" value={phone} className="text-lg p-3 ltr"
+              onChange={(e) => setPhone(e.target.value)}
             />
-            <p className="text-sm text-muted-foreground">
-              משמש רק כברירת מחדל בטופס כששוכר חדש נכנס. שינוי כאן לא ישנה את מה שסוכם עם שוכר קיים.
-            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="unit-description" className="text-base font-medium">תיאור — אופציונלי</Label>
+            <Label htmlFor="tenant-email" className="text-base font-medium">מייל — אופציונלי</Label>
+            <Input
+              id="tenant-email" type="email" value={email} className="text-lg p-3 ltr"
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">יידרש בהמשך לתזכורות תשלום.</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tenant-description" className="text-base font-medium">תיאור — אופציונלי</Label>
             <Textarea
-              id="unit-description" value={description} className="text-right"
+              id="tenant-description" value={description} className="text-right"
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="unit-notes" className="text-base font-medium">הערות — אופציונלי</Label>
+            <Label htmlFor="tenant-notes" className="text-base font-medium">הערות — אופציונלי</Label>
             <Textarea
-              id="unit-notes" value={notes} className="text-right"
+              id="tenant-notes" value={notes} className="text-right"
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>

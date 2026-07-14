@@ -29,7 +29,8 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEd
           שכר דירה מבוקש: ₪{Number(unit.default_rent).toLocaleString()}
         </p>
       )}
-      {unit.notes && <p className="text-sm">{unit.notes}</p>}
+      {unit.description && <p className="text-sm">{unit.description}</p>}
+      {unit.notes && <p className="text-sm text-muted-foreground">{unit.notes}</p>}
       <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={() => onEdit(unit)}>
           <Pencil className="w-4 h-4 ml-2" />

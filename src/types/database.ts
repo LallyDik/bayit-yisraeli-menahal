@@ -66,27 +66,33 @@ export type Database = {
         Row: {
           archived_at: string | null
           created_at: string
+          description: string | null
           email: string | null
           id: string
           name: string
+          notes: string | null
           owner_id: string
           phone: string | null
         }
         Insert: {
           archived_at?: string | null
           created_at?: string
+          description?: string | null
           email?: string | null
           id?: string
           name: string
+          notes?: string | null
           owner_id?: string
           phone?: string | null
         }
         Update: {
           archived_at?: string | null
           created_at?: string
+          description?: string | null
           email?: string | null
           id?: string
           name?: string
+          notes?: string | null
           owner_id?: string
           phone?: string | null
         }
@@ -97,6 +103,7 @@ export type Database = {
           archived_at: string | null
           created_at: string
           default_rent: number | null
+          description: string | null
           id: string
           name: string
           notes: string | null
@@ -106,6 +113,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           default_rent?: number | null
+          description?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -115,6 +123,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           default_rent?: number | null
+          description?: string | null
           id?: string
           name?: string
           notes?: string | null
