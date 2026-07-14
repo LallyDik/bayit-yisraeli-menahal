@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Auth } from '@/components/Auth';
 import { useAuth } from '@/hooks/useAuth';
+import { Dashboard } from '@/components/Dashboard';
 import { UnitForm } from '@/components/UnitForm';
 import { UnitCard } from '@/components/UnitCard';
 import { useUnits } from '@/hooks/useUnits';
@@ -19,6 +20,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
+  const [tab, setTab] = useState('overview');
   const { units, isLoading, createUnit, updateUnit, archiveUnit } = useUnits();
   const [editing, setEditing] = useState<Unit | null>(null);
   const [adding, setAdding] = useState(false);
@@ -146,11 +148,28 @@ const Index = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-6">
-        <Tabs defaultValue="units">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="mb-6">
+            <TabsTrigger value="overview">סקירה</TabsTrigger>
             <TabsTrigger value="units">יחידות</TabsTrigger>
             <TabsTrigger value="tenants">שוכרים</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview">
+            <Dashboard
+              units={units}
+              tenants={tenants}
+              activeByUnitId={activeByUnitId}
+              activeByTenantId={activeByTenantId}
+              isLoading={isLoading || tenantsLoading}
+              onAddUnit={() => { setTab('units'); setAdding(true); }}
+              onAddTenant={() => { setTab('tenants'); setAddingTenant(true); }}
+              onEditUnit={(u) => { setTab('units'); setEditing(u); }}
+              onEditTenant={(t) => { setTab('tenants'); setEditingTenant(t); }}
+              onGoUnits={() => setTab('units')}
+              onGoTenants={() => setTab('tenants')}
+            />
+          </TabsContent>
 
           <TabsContent value="units">
             {adding || editing ? (
