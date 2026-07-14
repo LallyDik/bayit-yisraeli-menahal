@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Pencil, Archive } from 'lucide-react';
+import { User, Pencil } from 'lucide-react';
+import { ConfirmArchive } from '@/components/ConfirmArchive';
 import type { Tenant } from '@/types';
 
 interface TenantCardProps {
@@ -27,7 +28,7 @@ export const TenantCard: React.FC<TenantCardProps> = ({
       </Badge>
     </CardHeader>
     <CardContent className="space-y-4">
-      {monthlyRent !== null && (
+      {monthlyRent != null && (
         <p className="text-sm text-muted-foreground">
           שכר דירה: ₪{Number(monthlyRent).toLocaleString()} לחודש
         </p>
@@ -41,10 +42,7 @@ export const TenantCard: React.FC<TenantCardProps> = ({
           <Pencil className="w-4 h-4" />
           ערוך
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onArchive(tenant.id)}>
-          <Archive className="w-4 h-4" />
-          העבר לארכיון
-        </Button>
+        <ConfirmArchive entityName={tenant.name} onConfirm={() => onArchive(tenant.id)} />
       </div>
     </CardContent>
   </Card>

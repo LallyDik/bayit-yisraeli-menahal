@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, Pencil, Archive } from 'lucide-react';
+import { Home, Pencil } from 'lucide-react';
+import { ConfirmArchive } from '@/components/ConfirmArchive';
 import type { Unit } from '@/types';
 
 interface UnitCardProps {
@@ -12,15 +13,17 @@ interface UnitCardProps {
   onArchive: (id: string) => void;
 }
 
+// != null (loose) on purpose: a stale client bundle after a schema change can
+// see undefined for a column that no longer exists, and undefined must render
+// as "absent", never as the string "undefined".
 const unitDetails = (unit: Unit): string[] => {
   const details: string[] = [];
-  if (unit.rooms !== null) details.push(`${unit.rooms} חדרים`);
-  if (unit.area_sqm !== null) details.push(`${unit.area_sqm} מ"ר`);
-  if (unit.condition !== null) details.push(`מצב: ${unit.condition}`);
-  if (unit.year_built !== null) details.push(`נבנה ${unit.year_built}`);
-  if (unit.last_renovation !== null) details.push(`שופץ ${unit.last_renovation}`);
-  if (unit.air_conditioned !== null) details.push(unit.air_conditioned ? 'ממוזגת' : 'ללא מיזוג');
-  if (unit.furnishing !== null) details.push(unit.furnishing);
+  if (unit.rooms != null) details.push(`${unit.rooms} חדרים`);
+  if (unit.area_sqm != null) details.push(`${unit.area_sqm} מ"ר`);
+  if (unit.condition != null) details.push(`מצב: ${unit.condition}`);
+  if (unit.year_built_or_renovated != null) details.push(`נבנה/שופץ ${unit.year_built_or_renovated}`);
+  if (unit.air_conditioned != null) details.push(unit.air_conditioned ? 'ממוזגת' : 'ללא מיזוג');
+  if (unit.furnishing != null) details.push(unit.furnishing);
   return details;
 };
 
@@ -38,7 +41,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEd
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        {unit.default_rent !== null && (
+        {unit.default_rent != null && (
           <p className="text-sm text-muted-foreground">
             שכר דירה מבוקש: ₪{Number(unit.default_rent).toLocaleString()}
           </p>
@@ -53,10 +56,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEd
             <Pencil className="w-4 h-4" />
             ערוך
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => onArchive(unit.id)}>
-            <Archive className="w-4 h-4" />
-            העבר לארכיון
-          </Button>
+          <ConfirmArchive entityName={unit.name} onConfirm={() => onArchive(unit.id)} />
         </div>
       </CardContent>
     </Card>

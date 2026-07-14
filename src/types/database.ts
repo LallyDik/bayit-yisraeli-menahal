@@ -160,12 +160,11 @@ export type Database = {
           description: string | null
           furnishing: string | null
           id: string
-          last_renovation: number | null
           name: string
           notes: string | null
           owner_id: string
           rooms: number | null
-          year_built: number | null
+          year_built_or_renovated: number | null
         }
         Insert: {
           air_conditioned?: boolean | null
@@ -177,12 +176,11 @@ export type Database = {
           description?: string | null
           furnishing?: string | null
           id?: string
-          last_renovation?: number | null
           name: string
           notes?: string | null
           owner_id?: string
           rooms?: number | null
-          year_built?: number | null
+          year_built_or_renovated?: number | null
         }
         Update: {
           air_conditioned?: boolean | null
@@ -194,12 +192,11 @@ export type Database = {
           description?: string | null
           furnishing?: string | null
           id?: string
-          last_renovation?: number | null
           name?: string
           notes?: string | null
           owner_id?: string
           rooms?: number | null
-          year_built?: number | null
+          year_built_or_renovated?: number | null
         }
         Relationships: []
       }

@@ -27,8 +27,7 @@ interface UnitFormProps {
     area_sqm: number | null;
     rooms: number | null;
     condition: string | null;
-    year_built: number | null;
-    last_renovation: number | null;
+    year_built_or_renovated: number | null;
     air_conditioned: boolean | null;
     furnishing: string | null;
   }) => void;
@@ -46,8 +45,9 @@ export const UnitForm: React.FC<UnitFormProps> = ({
   const [areaSqm, setAreaSqm] = useState(initialData.area_sqm?.toString() ?? '');
   const [rooms, setRooms] = useState(initialData.rooms?.toString() ?? '');
   const [condition, setCondition] = useState(initialData.condition ?? NOT_SPECIFIED);
-  const [yearBuilt, setYearBuilt] = useState(initialData.year_built?.toString() ?? '');
-  const [lastRenovation, setLastRenovation] = useState(initialData.last_renovation?.toString() ?? '');
+  const [yearBuiltOrRenovated, setYearBuiltOrRenovated] = useState(
+    initialData.year_built_or_renovated?.toString() ?? '',
+  );
   const [airConditioned, setAirConditioned] = useState(
     initialData.air_conditioned == null ? NOT_SPECIFIED : (initialData.air_conditioned ? 'yes' : 'no'),
   );
@@ -66,8 +66,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
       area_sqm: areaSqm === '' ? null : Number(areaSqm),
       rooms: rooms === '' ? null : Number(rooms),
       condition: condition === NOT_SPECIFIED ? null : condition,
-      year_built: yearBuilt === '' ? null : Number(yearBuilt),
-      last_renovation: lastRenovation === '' ? null : Number(lastRenovation),
+      year_built_or_renovated: yearBuiltOrRenovated === '' ? null : Number(yearBuiltOrRenovated),
       air_conditioned: airConditioned === NOT_SPECIFIED ? null : airConditioned === 'yes',
       furnishing: furnishing === NOT_SPECIFIED ? null : furnishing,
     });
@@ -164,21 +163,13 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit-year-built" className="text-base font-medium">שנת בנייה — אופציונלי</Label>
-              <Input
-                id="unit-year-built" type="number" min="1800" max="2100" value={yearBuilt} className="text-lg p-3 ltr"
-                onChange={(e) => setYearBuilt(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="unit-last-renovation" className="text-base font-medium">
-                שיפוץ אחרון (שנה) — אופציונלי
+              <Label htmlFor="unit-year" className="text-base font-medium">
+                שנת בנייה / שיפוץ אחרון — אופציונלי
               </Label>
               <Input
-                id="unit-last-renovation" type="number" min="1800" max="2100" value={lastRenovation}
+                id="unit-year" type="number" min="1800" max="2100" value={yearBuiltOrRenovated}
                 className="text-lg p-3 ltr"
-                onChange={(e) => setLastRenovation(e.target.value)}
+                onChange={(e) => setYearBuiltOrRenovated(e.target.value)}
               />
             </div>
           </div>
