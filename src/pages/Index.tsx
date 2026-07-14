@@ -11,6 +11,8 @@ import { useUnits } from '@/hooks/useUnits';
 import { TenantForm } from '@/components/TenantForm';
 import { TenantCard } from '@/components/TenantCard';
 import { useTenants } from '@/hooks/useTenants';
+import { TenancyForm } from '@/components/TenancyForm';
+import { useTenancies } from '@/hooks/useTenancies';
 import type { Unit, Tenant } from '@/types';
 
 const Index = () => {
@@ -21,6 +23,10 @@ const Index = () => {
   const { tenants, isLoading: tenantsLoading, createTenant, updateTenant, archiveTenant } = useTenants();
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
+  const {
+    tenancies, activeByUnitId, activeByTenantId, createTenancy, endTenancy,
+  } = useTenancies();
+  const [assigning, setAssigning] = useState(false);
 
   if (loading) {
     return (
@@ -58,6 +64,7 @@ const Index = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="units">יחידות</TabsTrigger>
             <TabsTrigger value="tenants">שוכרים</TabsTrigger>
+            <TabsTrigger value="tenancies">שיוכים</TabsTrigger>
           </TabsList>
 
           <TabsContent value="units">
@@ -100,7 +107,7 @@ const Index = () => {
                       <UnitCard
                         key={unit.id}
                         unit={unit}
-                        activeTenantName={null}
+                        activeTenantName={activeByUnitId.get(unit.id)?.tenant_name ?? null}
                         onEdit={setEditing}
                         onArchive={archiveUnit}
                       />
@@ -150,10 +157,68 @@ const Index = () => {
                       <TenantCard
                         key={tenant.id}
                         tenant={tenant}
-                        unitName={null}
+                        unitName={activeByTenantId.get(tenant.id)?.unit_name ?? null}
                         onEdit={setEditingTenant}
                         onArchive={archiveTenant}
                       />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tenancies">
+            {assigning ? (
+              <div className="flex flex-col items-center gap-4">
+                <Button variant="outline" onClick={() => setAssigning(false)}>← חזור</Button>
+                <TenancyForm
+                  units={units}
+                  tenants={tenants}
+                  occupiedUnitIds={new Set(activeByUnitId.keys())}
+                  housedTenantIds={new Set(activeByTenantId.keys())}
+                  onSubmit={(values) => { createTenancy(values); setAssigning(false); }}
+                />
+              </div>
+            ) : (
+              <>
+                <Button onClick={() => setAssigning(true)} className="gradient-bg hover:opacity-90 mb-8" size="lg">
+                  <Plus className="w-5 h-5 ml-2" />
+                  שייך שוכר ליחידה
+                </Button>
+
+                {tenancies.length === 0 ? (
+                  <Card className="text-center p-12">
+                    <CardContent>
+                      <h3 className="text-xl font-semibold mb-2">אין שיוכים עדיין</h3>
+                      <p className="text-muted-foreground">שייך שוכר ליחידה כדי להתחיל</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {tenancies.map((t) => (
+                      <Card key={t.id}>
+                        <CardContent className="p-6 flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-lg font-semibold">{t.tenant_name} — {t.unit_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              ₪{Number(t.monthly_rent).toLocaleString()} לחודש · מ-{t.start_date}
+                              {t.end_date ? ` עד ${t.end_date}` : ' · פעיל'}
+                            </p>
+                          </div>
+                          {t.end_date === null && (
+                            <Button
+                              variant="outline" size="sm"
+                              onClick={() => endTenancy({
+                                id: t.id,
+                                end_date: new Date().toISOString().slice(0, 10),
+                              })}
+                            >
+                              סיים שכירות
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}
