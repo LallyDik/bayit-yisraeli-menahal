@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { listTenancies, createTenancy, endTenancy, type TenancyWithNames } from '@/api/tenancies';
+import {
+  listTenancies, createTenancy, endTenancy, updateTenancy, type TenancyWithNames,
+} from '@/api/tenancies';
 import { useAuth } from '@/hooks/useAuth';
 import type { TenancyInsert } from '@/types';
 
@@ -57,12 +59,24 @@ export const useTenancies = () => {
     onError: (e) => toast.error(humanize(e)),
   });
 
+  const update = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<TenancyInsert> }) =>
+      updateTenancy(id, patch),
+    onSuccess: () => { invalidate(); toast.success('שכר הדירה עודכן'); },
+    onError: (e) => toast.error(humanize(e)),
+  });
+
   return {
     tenancies,
     activeByUnitId,
     activeByTenantId,
     isLoading,
-    createTenancy: create.mutate,
-    endTenancy: end.mutate,
+    // *Async: the tenant form drives create/end/update as a sequence of
+    // dependent writes (e.g. end the old tenancy, then create the new one),
+    // so callers need to await each step and react to failure — not just
+    // fire-and-forget. onSuccess/onError above still run either way.
+    createTenancy: create.mutateAsync,
+    endTenancy: end.mutateAsync,
+    updateTenancy: update.mutateAsync,
   };
 };

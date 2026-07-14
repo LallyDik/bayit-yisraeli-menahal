@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LogOut, Plus, Home, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,9 +12,10 @@ import { useUnits } from '@/hooks/useUnits';
 import { TenantForm } from '@/components/TenantForm';
 import { TenantCard } from '@/components/TenantCard';
 import { useTenants } from '@/hooks/useTenants';
-import { TenancyForm } from '@/components/TenancyForm';
 import { useTenancies } from '@/hooks/useTenancies';
 import type { Unit, Tenant } from '@/types';
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -24,9 +26,93 @@ const Index = () => {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
   const {
-    tenancies, activeByUnitId, activeByTenantId, createTenancy, endTenancy,
+    activeByUnitId, activeByTenantId, createTenancy, endTenancy, updateTenancy,
   } = useTenancies();
-  const [assigning, setAssigning] = useState(false);
+
+  // Saving a tenant with a unit assignment is two sequential writes (tenant,
+  // then tenancy). If the first succeeds and the second fails, the tenant
+  // must not be left looking unaccounted-for: createTenant/updateTenant's own
+  // toast already confirms what *did* save, and the tenancy mutations' own
+  // onError already explains *why* the assignment step failed (e.g. the unit
+  // was taken in the meantime) — this just makes explicit, in the tenant's
+  // own name, that the two are separate outcomes.
+  type TenantFields = {
+    name: string;
+    phone: string | null;
+    email: string | null;
+    description: string | null;
+    notes: string | null;
+  };
+
+  const saveNewTenant = async (
+    fields: TenantFields, unitId: string | null, monthlyRent: number | null,
+  ) => {
+    let created: Tenant;
+    try {
+      created = await createTenant(fields);
+    } catch {
+      return; // useTenants already toasted why the tenant itself wasn't saved.
+    }
+    if (!unitId) return;
+    try {
+      await createTenancy({
+        tenant_id: created.id,
+        unit_id: unitId,
+        monthly_rent: monthlyRent ?? 0,
+        start_date: todayISO(),
+      });
+    } catch {
+      toast.error(`השוכר "${created.name}" נשמר, אך לא שויך ליחידה. אפשר לשייך אותו דרך עריכת השוכר.`);
+    }
+  };
+
+  const saveEditedTenant = async (
+    tenant: Tenant, fields: TenantFields, unitId: string | null, monthlyRent: number | null,
+  ) => {
+    try {
+      await updateTenant({ id: tenant.id, patch: fields });
+    } catch {
+      return; // useTenants already toasted why the tenant fields weren't saved.
+    }
+    const current = activeByTenantId.get(tenant.id) ?? null;
+    try {
+      if (current && !unitId) {
+        // Cleared the unit -> end the tenancy. Never delete: it's history.
+        await endTenancy({ id: current.id, end_date: todayISO() });
+      } else if (current && unitId && unitId !== current.unit_id) {
+        // Moved to a different unit -> close out the old stay, open a new one.
+        await endTenancy({ id: current.id, end_date: todayISO() });
+        await createTenancy({
+          tenant_id: tenant.id, unit_id: unitId, monthly_rent: monthlyRent ?? 0, start_date: todayISO(),
+        });
+      } else if (current && unitId && unitId === current.unit_id) {
+        // Same unit — only the rent may have changed. Update in place; ending
+        // and recreating would fabricate a fake move-out in the history.
+        if (monthlyRent !== null && Number(monthlyRent) !== Number(current.monthly_rent)) {
+          await updateTenancy({ id: current.id, patch: { monthly_rent: monthlyRent } });
+        }
+      } else if (!current && unitId) {
+        // Had no unit, now assigned one for the first time.
+        await createTenancy({
+          tenant_id: tenant.id, unit_id: unitId, monthly_rent: monthlyRent ?? 0, start_date: todayISO(),
+        });
+      }
+      // else: no unit before, still no unit -> nothing to do on the tenancy side.
+    } catch {
+      toast.error('פרטי השוכר נשמרו, אך העדכון בשיוך ליחידה נכשל.');
+    }
+  };
+
+  const handleTenantSubmit = (values: TenantFields & { unit_id: string | null; monthly_rent: number | null }) => {
+    const { unit_id, monthly_rent, ...fields } = values;
+    if (editingTenant) {
+      void saveEditedTenant(editingTenant, fields, unit_id, monthly_rent);
+    } else {
+      void saveNewTenant(fields, unit_id, monthly_rent);
+    }
+    setAddingTenant(false);
+    setEditingTenant(null);
+  };
 
   if (loading) {
     return (
@@ -52,7 +138,7 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <span className="text-lg">{user.email}</span>
             <Button onClick={signOut} variant="ghost" size="sm" className="text-white hover:bg-white/20">
-              <LogOut className="w-4 h-4 ml-2" />
+              <LogOut className="w-4 h-4" />
               התנתק
             </Button>
           </div>
@@ -64,7 +150,6 @@ const Index = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="units">יחידות</TabsTrigger>
             <TabsTrigger value="tenants">שוכרים</TabsTrigger>
-            <TabsTrigger value="tenancies">שיוכים</TabsTrigger>
           </TabsList>
 
           <TabsContent value="units">
@@ -87,7 +172,7 @@ const Index = () => {
             ) : (
               <>
                 <Button onClick={() => setAdding(true)} className="gradient-bg hover:opacity-90 mb-8" size="lg">
-                  <Plus className="w-5 h-5 ml-2" />
+                  <Plus className="w-5 h-5" />
                   הוסף יחידה
                 </Button>
 
@@ -125,20 +210,21 @@ const Index = () => {
                   ← חזור
                 </Button>
                 <TenantForm
-                  initialData={editingTenant ?? undefined}
+                  units={units}
+                  occupiedUnitIds={new Set(activeByUnitId.keys())}
+                  initialData={editingTenant ? {
+                    ...editingTenant,
+                    unit_id: activeByTenantId.get(editingTenant.id)?.unit_id ?? null,
+                    monthly_rent: activeByTenantId.get(editingTenant.id)?.monthly_rent ?? null,
+                  } : undefined}
                   submitLabel={editingTenant ? 'עדכן שוכר' : 'הוסף שוכר'}
-                  onSubmit={(values) => {
-                    if (editingTenant) updateTenant({ id: editingTenant.id, patch: values });
-                    else createTenant(values);
-                    setAddingTenant(false);
-                    setEditingTenant(null);
-                  }}
+                  onSubmit={handleTenantSubmit}
                 />
               </div>
             ) : (
               <>
                 <Button onClick={() => setAddingTenant(true)} className="gradient-bg hover:opacity-90 mb-8" size="lg">
-                  <Plus className="w-5 h-5 ml-2" />
+                  <Plus className="w-5 h-5" />
                   הוסף שוכר
                 </Button>
                 {tenantsLoading ? (
@@ -158,67 +244,10 @@ const Index = () => {
                         key={tenant.id}
                         tenant={tenant}
                         unitName={activeByTenantId.get(tenant.id)?.unit_name ?? null}
+                        monthlyRent={activeByTenantId.get(tenant.id)?.monthly_rent ?? null}
                         onEdit={setEditingTenant}
                         onArchive={archiveTenant}
                       />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="tenancies">
-            {assigning ? (
-              <div className="flex flex-col items-center gap-4">
-                <Button variant="outline" onClick={() => setAssigning(false)}>← חזור</Button>
-                <TenancyForm
-                  units={units}
-                  tenants={tenants}
-                  occupiedUnitIds={new Set(activeByUnitId.keys())}
-                  housedTenantIds={new Set(activeByTenantId.keys())}
-                  onSubmit={(values) => { createTenancy(values); setAssigning(false); }}
-                />
-              </div>
-            ) : (
-              <>
-                <Button onClick={() => setAssigning(true)} className="gradient-bg hover:opacity-90 mb-8" size="lg">
-                  <Plus className="w-5 h-5 ml-2" />
-                  שייך שוכר ליחידה
-                </Button>
-
-                {tenancies.length === 0 ? (
-                  <Card className="text-center p-12">
-                    <CardContent>
-                      <h3 className="text-xl font-semibold mb-2">אין שיוכים עדיין</h3>
-                      <p className="text-muted-foreground">שייך שוכר ליחידה כדי להתחיל</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-4">
-                    {tenancies.map((t) => (
-                      <Card key={t.id}>
-                        <CardContent className="p-6 flex items-center justify-between gap-4">
-                          <div>
-                            <p className="text-lg font-semibold">{t.tenant_name} — {t.unit_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ₪{Number(t.monthly_rent).toLocaleString()} לחודש · מ-{t.start_date}
-                              {t.end_date ? ` עד ${t.end_date}` : ' · פעיל'}
-                            </p>
-                          </div>
-                          {t.end_date === null && (
-                            <Button
-                              variant="outline" size="sm"
-                              onClick={() => endTenancy({
-                                id: t.id,
-                                end_date: new Date().toISOString().slice(0, 10),
-                              })}
-                            >
-                              סיים שכירות
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
                     ))}
                   </div>
                 )}

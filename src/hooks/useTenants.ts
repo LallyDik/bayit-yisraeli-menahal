@@ -49,8 +49,12 @@ export const useTenants = () => {
   return {
     tenants,
     isLoading,
-    createTenant: create.mutate,
-    updateTenant: update.mutate,
+    // *Async: creating/editing a tenant can chain into a tenancy write (see
+    // Index.tsx), which needs to await the tenant write and react to its
+    // failure before touching the tenancy. onSuccess/onError above still run
+    // regardless of whether the caller awaits.
+    createTenant: create.mutateAsync,
+    updateTenant: update.mutateAsync,
     archiveTenant: archive.mutate,
   };
 };

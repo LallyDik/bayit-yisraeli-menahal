@@ -8,11 +8,14 @@ import type { Tenant } from '@/types';
 interface TenantCardProps {
   tenant: Tenant;
   unitName: string | null;
+  monthlyRent: number | null;
   onEdit: (tenant: Tenant) => void;
   onArchive: (id: string) => void;
 }
 
-export const TenantCard: React.FC<TenantCardProps> = ({ tenant, unitName, onEdit, onArchive }) => (
+export const TenantCard: React.FC<TenantCardProps> = ({
+  tenant, unitName, monthlyRent, onEdit, onArchive,
+}) => (
   <Card className="card-hover">
     <CardHeader className="flex flex-row items-center justify-between gap-2">
       <CardTitle className="flex items-center gap-2 text-lg">
@@ -24,17 +27,22 @@ export const TenantCard: React.FC<TenantCardProps> = ({ tenant, unitName, onEdit
       </Badge>
     </CardHeader>
     <CardContent className="space-y-4">
+      {monthlyRent !== null && (
+        <p className="text-sm text-muted-foreground">
+          שכר דירה: ₪{Number(monthlyRent).toLocaleString()} לחודש
+        </p>
+      )}
       {tenant.phone && <p className="text-sm text-muted-foreground ltr text-right">{tenant.phone}</p>}
       {tenant.email && <p className="text-sm text-muted-foreground ltr text-right">{tenant.email}</p>}
       {tenant.description && <p className="text-sm">{tenant.description}</p>}
       {tenant.notes && <p className="text-sm text-muted-foreground">{tenant.notes}</p>}
       <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={() => onEdit(tenant)}>
-          <Pencil className="w-4 h-4 ml-2" />
+          <Pencil className="w-4 h-4" />
           ערוך
         </Button>
         <Button variant="ghost" size="sm" onClick={() => onArchive(tenant.id)}>
-          <Archive className="w-4 h-4 ml-2" />
+          <Archive className="w-4 h-4" />
           העבר לארכיון
         </Button>
       </div>

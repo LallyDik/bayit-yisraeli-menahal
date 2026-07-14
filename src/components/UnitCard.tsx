@@ -33,11 +33,11 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEd
       {unit.notes && <p className="text-sm text-muted-foreground">{unit.notes}</p>}
       <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={() => onEdit(unit)}>
-          <Pencil className="w-4 h-4 ml-2" />
+          <Pencil className="w-4 h-4" />
           ערוך
         </Button>
         <Button variant="ghost" size="sm" onClick={() => onArchive(unit.id)}>
-          <Archive className="w-4 h-4 ml-2" />
+          <Archive className="w-4 h-4" />
           העבר לארכיון
         </Button>
       </div>
