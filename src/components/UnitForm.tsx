@@ -15,6 +15,7 @@ import type { Unit } from '@/types';
 // (not just an unset/placeholder state).
 const NOT_SPECIFIED = 'not-specified';
 const CONDITIONS = ['חדש', 'משופץ', 'טוב', 'דורש שיפוץ'] as const;
+const FURNISHINGS = ['מרוהט קומפלט', 'מרוהט חלקית', 'לא מרוהט'] as const;
 
 interface UnitFormProps {
   onSubmit: (values: {
@@ -28,6 +29,7 @@ interface UnitFormProps {
     year_built: number | null;
     last_renovation: number | null;
     air_conditioned: boolean | null;
+    furnishing: string | null;
   }) => void;
   initialData?: Partial<Unit>;
   submitLabel?: string;
@@ -48,6 +50,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
   const [airConditioned, setAirConditioned] = useState(
     initialData.air_conditioned == null ? NOT_SPECIFIED : (initialData.air_conditioned ? 'yes' : 'no'),
   );
+  const [furnishing, setFurnishing] = useState(initialData.furnishing ?? NOT_SPECIFIED);
   const [description, setDescription] = useState(initialData.description ?? '');
   const [notes, setNotes] = useState(initialData.notes ?? '');
 
@@ -65,6 +68,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
       year_built: yearBuilt === '' ? null : Number(yearBuilt),
       last_renovation: lastRenovation === '' ? null : Number(lastRenovation),
       air_conditioned: airConditioned === NOT_SPECIFIED ? null : airConditioned === 'yes',
+      furnishing: furnishing === NOT_SPECIFIED ? null : furnishing,
     });
   };
 
@@ -128,6 +132,19 @@ export const UnitForm: React.FC<UnitFormProps> = ({
                   <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
                   {CONDITIONS.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-base font-medium">ריהוט — אופציונלי</Label>
+              <Select value={furnishing} onValueChange={setFurnishing}>
+                <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
+                  {FURNISHINGS.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -107,6 +107,7 @@ export type Database = {
           created_at: string
           default_rent: number | null
           description: string | null
+          furnishing: string | null
           id: string
           last_renovation: number | null
           name: string
@@ -123,6 +124,7 @@ export type Database = {
           created_at?: string
           default_rent?: number | null
           description?: string | null
+          furnishing?: string | null
           id?: string
           last_renovation?: number | null
           name: string
@@ -139,6 +141,7 @@ export type Database = {
           created_at?: string
           default_rent?: number | null
           description?: string | null
+          furnishing?: string | null
           id?: string
           last_renovation?: number | null
           name?: string

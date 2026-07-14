@@ -153,4 +153,18 @@ describe('schema invariants', () => {
     });
     expect(okErr).toBeNull();
   });
+
+  it('rejects a furnishing value outside the fixed list', async () => {
+    const { error } = await alice.from('units').insert({
+      name: `alice-badfurn-${run}`,
+      furnishing: 'סמי-מרוהט',
+    });
+    expect(error).not.toBeNull();
+
+    const { error: okErr } = await alice.from('units').insert({
+      name: `alice-goodfurn-${run}`,
+      furnishing: 'מרוהט חלקית',
+    });
+    expect(okErr).toBeNull();
+  });
 });

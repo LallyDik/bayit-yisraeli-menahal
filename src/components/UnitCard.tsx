@@ -20,6 +20,7 @@ const unitDetails = (unit: Unit): string[] => {
   if (unit.year_built !== null) details.push(`נבנה ${unit.year_built}`);
   if (unit.last_renovation !== null) details.push(`שופץ ${unit.last_renovation}`);
   if (unit.air_conditioned !== null) details.push(unit.air_conditioned ? 'ממוזגת' : 'ללא מיזוג');
+  if (unit.furnishing !== null) details.push(unit.furnishing);
   return details;
 };
 
