@@ -48,7 +48,7 @@ export const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background page-confetti flex items-center justify-center p-6">
+    <div className="flex items-center justify-center p-6">
       <Card className="w-full max-w-md rounded-[2rem] border-border border-t-4 border-t-primary shadow-none">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-display text-foreground">
