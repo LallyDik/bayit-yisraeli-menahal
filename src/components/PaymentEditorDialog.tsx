@@ -24,12 +24,7 @@ import {
   listHebrewMonthsForYear,
   type BillingCalendar,
 } from '@/utils/billingSchedule';
-
-const localDateISO = () => {
-  const date = new Date();
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
-};
+import { localDateISO } from '@/utils/date';
 
 interface PaymentEditorDialogProps {
   open: boolean;
@@ -146,14 +141,14 @@ export function PaymentEditorDialog({
             </div>
             <DialogTitle className="text-2xl">עדכון תשלום</DialogTitle>
             <DialogDescription className="text-foreground/65">
-              {tenancy.tenant_name} · {tenancy.unit_name}
+              {charge?.label ?? 'שכר דירה'} · {tenancy.tenant_name} · {tenancy.unit_name}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6">
           <p className="text-sm leading-6 text-muted-foreground">
-            אפשר לתקן את החיוב ולרשום תשלום מלא או חלקי. “שולם” הוא הסכום המצטבר לחודש הזה.
+            כאן רושמים תשלום מלא או חלקי. סכום החיוב נקבע בהגדרות, ו„שולם” הוא הסכום המצטבר לחודש הזה.
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -192,7 +187,7 @@ export function PaymentEditorDialog({
               <>
                 <div className="grid grid-cols-3 gap-2">
                   <Select value={hebrewDay} onValueChange={(value) => updateHebrewDate({ day: value })}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl" aria-label="יום התשלום העברי"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {HEBREW_DAY_LABELS.map((label, index) => (
                         <SelectItem key={label} value={String(index + 1)}>{label}</SelectItem>
@@ -200,7 +195,7 @@ export function PaymentEditorDialog({
                     </SelectContent>
                   </Select>
                   <Select value={hebrewMonth} onValueChange={(value) => updateHebrewDate({ monthKey: value })}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="חודש" /></SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl" aria-label="חודש התשלום העברי"><SelectValue placeholder="חודש" /></SelectTrigger>
                     <SelectContent>
                       {hebrewMonths.map((month) => (
                         <SelectItem key={month.key} value={month.key}>{month.label}</SelectItem>
@@ -208,7 +203,7 @@ export function PaymentEditorDialog({
                     </SelectContent>
                   </Select>
                   <Select value={hebrewYear} onValueChange={(value) => updateHebrewDate({ year: value })}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl" aria-label="שנת התשלום העברית"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {hebrewYearOptions.map((year) => (
                         <SelectItem key={year} value={String(year)}>{hebrewYearLabel(year)}</SelectItem>

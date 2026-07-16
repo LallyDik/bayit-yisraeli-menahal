@@ -12,6 +12,7 @@ import {
 import type { ChargeWithPaid } from '@/api/billing';
 import type { TenancyWithNames } from '@/api/tenancies';
 import { formatBillingDate } from '@/utils/billingSchedule';
+import { localDateISO } from '@/utils/date';
 
 interface PaymentHistoryDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ export function PaymentHistoryDialog({
     [tenancies],
   );
   const dueCharges = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     return charges
       .filter((charge) => charge.due_date <= today)
       .filter((charge) => !showOpenOnly || remaining(charge) > 0)

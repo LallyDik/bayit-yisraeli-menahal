@@ -24,6 +24,7 @@ interface AddAdditionalPaymentDialogProps {
   tenancy: TenancyWithNames | null;
   initialTerm?: PaymentTerm | null;
   startOptions: StartOption[];
+  defaultStartSequence?: number;
   isSaving: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (input: {
@@ -46,6 +47,7 @@ export function AddAdditionalPaymentDialog({
   tenancy,
   initialTerm,
   startOptions,
+  defaultStartSequence,
   isSaving,
   onOpenChange,
   onSave,
@@ -72,9 +74,9 @@ export function AddAdditionalPaymentDialog({
     setCurrentReading('');
     setUnitRate(String(Number(initialTerm?.unit_rate ?? 0) || ''));
     setFrequency(initialTerm?.frequency_months === 2 ? 2 : 1);
-    setStartsOnSequence(String(initialTerm?.starts_on_sequence ?? startOptions[0]?.sequenceNo ?? 1));
+    setStartsOnSequence(String(initialTerm?.starts_on_sequence ?? defaultStartSequence ?? startOptions[0]?.sequenceNo ?? 1));
     setError(null);
-  }, [initialTerm, open, startOptions]);
+  }, [defaultStartSequence, initialTerm, open, startOptions]);
 
   if (!tenancy) return null;
 
@@ -178,9 +180,10 @@ export function AddAdditionalPaymentDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-background p-1" role="group" aria-label="שיטת חישוב">
             <button
               type="button"
+              aria-pressed={calculationType === 'fixed'}
               onClick={() => setCalculationType('fixed')}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${calculationType === 'fixed' ? 'bg-foreground text-background' : 'hover:bg-card'}`}
             >
@@ -188,6 +191,7 @@ export function AddAdditionalPaymentDialog({
             </button>
             <button
               type="button"
+              aria-pressed={calculationType === 'meter'}
               onClick={() => setCalculationType('meter')}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${calculationType === 'meter' ? 'bg-foreground text-background' : 'hover:bg-card'}`}
             >

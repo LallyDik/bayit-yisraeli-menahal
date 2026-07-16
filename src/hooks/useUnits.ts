@@ -21,7 +21,7 @@ export const useUnits = () => {
   const onError = (e: unknown) =>
     toast.error(e instanceof Error ? e.message : 'הפעולה נכשלה');
 
-  const { data: units = [], isLoading } = useQuery({
+  const { data: units = [], isLoading, error, refetch } = useQuery({
     queryKey: KEY,
     queryFn: listUnits,
     enabled: !!user,
@@ -49,8 +49,11 @@ export const useUnits = () => {
   return {
     units,
     isLoading,
-    createUnit: create.mutate,
-    updateUnit: update.mutate,
+    error,
+    refetch,
+    isSaving: create.isPending || update.isPending,
+    createUnit: create.mutateAsync,
+    updateUnit: update.mutateAsync,
     archiveUnit: archive.mutateAsync,
   };
 };

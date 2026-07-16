@@ -17,8 +17,8 @@ interface TenantCardProps {
 export const TenantCard: React.FC<TenantCardProps> = ({
   tenant, unitName, monthlyRent, onEdit, onArchive,
 }) => (
-  <Card className={`card-hover [border-inline-start-width:4px] ${unitName ? 'border-primary' : 'border-secondary'}`}>
-    <CardHeader className="flex flex-row items-center justify-between gap-2">
+  <Card className={`card-hover overflow-hidden [border-inline-start-width:4px] ${unitName ? 'border-primary' : 'border-secondary'}`}>
+    <CardHeader className="flex flex-row items-center justify-between gap-3 p-5 pb-3">
       <CardTitle className="flex items-center gap-2 text-lg font-display">
         <User className="w-5 h-5 text-primary" />
         {tenant.name}
@@ -27,17 +27,18 @@ export const TenantCard: React.FC<TenantCardProps> = ({
         {unitName ?? 'ללא יחידה'}
       </Badge>
     </CardHeader>
-    <CardContent className="space-y-4">
+    <CardContent className="space-y-3 p-5 pt-0">
       {monthlyRent != null && (
         <p className="text-sm text-muted-foreground nums">
-          שכר דירה: ₪{Number(monthlyRent).toLocaleString()} לחודש
+          ₪{Number(monthlyRent).toLocaleString()} לחודש
         </p>
       )}
-      {tenant.phone && <p className="text-sm text-muted-foreground ltr text-right">{tenant.phone}</p>}
-      {tenant.email && <p className="text-sm text-muted-foreground ltr text-right">{tenant.email}</p>}
-      {tenant.description && <p className="text-sm">{tenant.description}</p>}
-      {tenant.notes && <p className="text-sm text-muted-foreground">{tenant.notes}</p>}
-      <div className="flex gap-2">
+      {(tenant.phone || tenant.email) && (
+        <p className="truncate text-sm text-muted-foreground" dir="ltr">
+          {tenant.phone}{tenant.phone && tenant.email && ' · '}{tenant.email}
+        </p>
+      )}
+      <div className="flex gap-2 border-t pt-3">
         <Button variant="outline" size="sm" onClick={() => onEdit(tenant)}>
           <Pencil className="w-4 h-4" />
           ערוך

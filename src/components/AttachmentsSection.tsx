@@ -6,6 +6,16 @@ import { Paperclip, FileText, Trash2 } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
 import { getAttachmentUrl } from '@/api/attachments';
 import type { Attachment } from '@/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // mirrors the bucket's file_size_limit
 
@@ -25,12 +35,14 @@ const ImageThumb: React.FC<{ att: Attachment; onDelete: () => void }> = ({ att, 
   return (
     <div className="relative">
       {url ? (
-        <img
-          src={url}
-          alt={att.file_name}
-          className="rounded-md object-cover h-24 w-full cursor-pointer"
+        <button
+          type="button"
+          className="block w-full rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           onClick={() => window.open(url, '_blank')}
-        />
+          aria-label={`פתיחת ${att.file_name}`}
+        >
+          <img src={url} alt="" className="h-24 w-full rounded-md object-cover" />
+        </button>
       ) : (
         <div className="rounded-md h-24 w-full bg-muted animate-pulse" />
       )}
@@ -83,6 +95,7 @@ export const AttachmentsSection: React.FC<AttachmentsSectionProps> = ({ unitId, 
   const parent = unitId ? { unitId } : { tenantId: tenantId! };
   const { attachments, isLoading, upload, remove } = useAttachments(parent);
   const [uploading, setUploading] = useState(false);
+  const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,10 +115,6 @@ export const AttachmentsSection: React.FC<AttachmentsSectionProps> = ({ unitId, 
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleDelete = (att: Attachment) => {
-    if (confirm('למחוק את הקובץ?')) remove(att);
   };
 
   const images = attachments.filter(isImage);
@@ -137,7 +146,7 @@ export const AttachmentsSection: React.FC<AttachmentsSectionProps> = ({ unitId, 
       {images.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {images.map((att) => (
-            <ImageThumb key={att.id} att={att} onDelete={() => handleDelete(att)} />
+            <ImageThumb key={att.id} att={att} onDelete={() => setAttachmentToDelete(att)} />
           ))}
         </div>
       )}
@@ -145,7 +154,7 @@ export const AttachmentsSection: React.FC<AttachmentsSectionProps> = ({ unitId, 
       {others.length > 0 && (
         <div className="space-y-2">
           {others.map((att) => (
-            <FileRow key={att.id} att={att} onDelete={() => handleDelete(att)} />
+            <FileRow key={att.id} att={att} onDelete={() => setAttachmentToDelete(att)} />
           ))}
         </div>
       )}
@@ -153,6 +162,29 @@ export const AttachmentsSection: React.FC<AttachmentsSectionProps> = ({ unitId, 
       {!isLoading && attachments.length === 0 && (
         <p className="text-sm text-muted-foreground">אין קבצים עדיין</p>
       )}
+
+      <AlertDialog open={attachmentToDelete !== null} onOpenChange={(open) => { if (!open) setAttachmentToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק את הקובץ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              הקובץ „{attachmentToDelete?.file_name}” יימחק לצמיתות ולא יהיה אפשר לשחזר אותו.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (attachmentToDelete) remove(attachmentToDelete);
+                setAttachmentToDelete(null);
+              }}
+            >
+              מחיקת הקובץ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

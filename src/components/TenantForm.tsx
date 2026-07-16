@@ -3,20 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { AttachmentsSection } from '@/components/AttachmentsSection';
 import type { Tenant, Unit } from '@/types';
+import { localDateISO } from '@/utils/date';
 
 // Sentinel for "no unit" — Radix Select rejects an empty-string item value,
 // and we need an explicit, selectable option for "this tenant has no unit"
 // (not just an unset/placeholder state).
 const NO_UNIT = 'none';
-const todayISO = () => new Date().toISOString().slice(0, 10);
-
 interface TenantFormProps {
   onSubmit: (values: {
     name: string;
@@ -27,13 +26,14 @@ interface TenantFormProps {
     unit_id: string | null;
     monthly_rent: number | null;
     start_date: string;
-  }) => void;
+  }) => void | Promise<void>;
   units: Unit[];
   // Units with a live tenancy right now (any tenant, not just this one) —
   // used to keep two tenants from being offered the same unit in the Select.
   occupiedUnitIds: Set<string>;
   initialData?: Partial<Tenant> & { unit_id?: string | null; monthly_rent?: number | null; start_date?: string };
   submitLabel?: string;
+  isSubmitting?: boolean;
 }
 
 export const TenantForm: React.FC<TenantFormProps> = ({
@@ -42,6 +42,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
   occupiedUnitIds,
   initialData = {},
   submitLabel = 'הוסף שוכר',
+  isSubmitting = false,
 }) => {
   const [name, setName] = useState(initialData.name ?? '');
   const [phone, setPhone] = useState(initialData.phone ?? '');
@@ -52,7 +53,8 @@ export const TenantForm: React.FC<TenantFormProps> = ({
   const [rent, setRent] = useState(
     initialData.monthly_rent != null ? String(initialData.monthly_rent) : '',
   );
-  const [startDate, setStartDate] = useState(initialData.start_date ?? todayISO());
+  const [startDate, setStartDate] = useState(initialData.start_date ?? localDateISO());
+  const [error, setError] = useState<string | null>(null);
 
   // Free units, plus (when editing) this tenant's own currently-assigned
   // unit — so re-saving an unrelated field doesn't force them to move out.
@@ -62,6 +64,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
 
   const handleUnitChange = (id: string) => {
     setUnitId(id);
+    setError(null);
     if (id === NO_UNIT) return;
     // Prefill from the unit's template. This is a starting value, not a
     // binding one — see the helper text below the rent field.
@@ -71,8 +74,20 @@ export const TenantForm: React.FC<TenantFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError('יש להזין את שם השוכר.');
+      return;
+    }
     const hasUnit = unitId !== NO_UNIT;
+    if (hasUnit && rent === '') {
+      setError('יש להזין את שכר הדירה שסוכם, גם אם הסכום הוא 0.');
+      return;
+    }
+    if (hasUnit && !startDate) {
+      setError('יש לבחור תאריך כניסה ליחידה.');
+      return;
+    }
+    setError(null);
     onSubmit({
       name: name.trim(),
       phone: phone.trim() === '' ? null : phone.trim(),
@@ -92,13 +107,14 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           <Plus className="w-6 h-6" />
           {submitLabel}
         </CardTitle>
+        <CardDescription className="text-foreground/70">שומרים פרטי קשר ומשייכים ליחידה עכשיו או בהמשך.</CardDescription>
       </CardHeader>
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="tenant-name" className="text-lg font-medium">שם השוכר</Label>
+            <Label htmlFor="tenant-name" className="text-lg font-medium">שם השוכר <span className="text-destructive" aria-hidden="true">*</span></Label>
             <Input
-              id="tenant-name" value={name} required className="text-lg p-3"
+              id="tenant-name" value={name} required autoFocus autoComplete="name" className="text-lg p-3"
               onChange={(e) => setName(e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
@@ -107,9 +123,9 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-lg font-medium">יחידה</Label>
+            <Label htmlFor="tenant-unit" className="text-lg font-medium">יחידה</Label>
             <Select value={unitId} onValueChange={handleUnitChange}>
-              <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="tenant-unit" className="text-lg p-3"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_UNIT}>ללא יחידה</SelectItem>
                 {availableUnits.map((u) => (
@@ -125,6 +141,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
                 <Label htmlFor="tenant-rent" className="text-lg font-medium">שכר דירה חודשי (₪)</Label>
                 <Input
                   id="tenant-rent" type="number" min="0" value={rent} className="text-lg p-3 ltr"
+                  required
                   onChange={(e) => setRent(e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -138,6 +155,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
                   type="date"
                   value={startDate}
                   className="text-lg p-3 ltr"
+                  required
                   onChange={(e) => setStartDate(e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -150,7 +168,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           <div className="space-y-2">
             <Label htmlFor="tenant-phone" className="text-base font-medium">טלפון — אופציונלי</Label>
             <Input
-              id="tenant-phone" type="tel" value={phone} className="text-lg p-3 ltr"
+              id="tenant-phone" type="tel" value={phone} autoComplete="tel" className="text-lg p-3 ltr"
               onChange={(e) => setPhone(e.target.value)}
             />
           </div>
@@ -158,7 +176,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           <div className="space-y-2">
             <Label htmlFor="tenant-email" className="text-base font-medium">מייל — אופציונלי</Label>
             <Input
-              id="tenant-email" type="email" value={email} className="text-lg p-3 ltr"
+              id="tenant-email" type="email" value={email} autoComplete="email" className="text-lg p-3 ltr"
               onChange={(e) => setEmail(e.target.value)}
             />
             <p className="text-sm text-muted-foreground">יידרש בהמשך לתזכורות תשלום.</p>
@@ -182,8 +200,10 @@ export const TenantForm: React.FC<TenantFormProps> = ({
 
           {initialData.id && <AttachmentsSection tenantId={initialData.id} />}
 
-          <Button type="submit" className="w-full text-lg py-3">
-            {submitLabel}
+          {error && <p role="alert" className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
+
+          <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting || !name.trim()} aria-busy={isSubmitting}>
+            {isSubmitting ? 'שומר...' : submitLabel}
           </Button>
         </form>
       </CardContent>

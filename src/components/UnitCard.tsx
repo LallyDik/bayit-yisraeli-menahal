@@ -30,28 +30,28 @@ const unitDetails = (unit: Unit): string[] => {
 export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEdit, onArchive }) => {
   const details = unitDetails(unit);
   return (
-    <Card className={`card-hover [border-inline-start-width:4px] ${activeTenantName ? 'border-primary' : 'border-secondary'}`}>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
+    <Card className={`card-hover overflow-hidden [border-inline-start-width:4px] ${activeTenantName ? 'border-primary' : 'border-secondary'}`}>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 p-5 pb-3">
         <CardTitle className="flex items-center gap-2 text-lg font-display">
           <Home className="w-5 h-5 text-primary" />
           {unit.name}
         </CardTitle>
         <Badge variant={activeTenantName ? 'default' : 'secondary'}>
-          {activeTenantName ?? 'פנויה'}
+          {activeTenantName ? 'תפוסה' : 'פנויה'}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {unit.default_rent != null && (
-          <p className="text-sm text-muted-foreground nums">
-            שכר דירה מבוקש: ₪{Number(unit.default_rent).toLocaleString()}
+      <CardContent className="space-y-3 p-5 pt-0">
+        {(activeTenantName || unit.default_rent != null) && (
+          <p className="truncate text-sm text-muted-foreground nums">
+            {activeTenantName && <>שוכר: <span className="text-foreground">{activeTenantName}</span></>}
+            {activeTenantName && unit.default_rent != null && ' · '}
+            {unit.default_rent != null && <>₪{Number(unit.default_rent).toLocaleString()} מבוקש</>}
           </p>
         )}
         {details.length > 0 && (
-          <p className="text-sm text-muted-foreground">{details.join(' · ')}</p>
+          <p className="line-clamp-1 text-sm text-muted-foreground">{details.join(' · ')}</p>
         )}
-        {unit.description && <p className="text-sm">{unit.description}</p>}
-        {unit.notes && <p className="text-sm text-muted-foreground">{unit.notes}</p>}
-        <div className="flex gap-2">
+        <div className="flex gap-2 border-t pt-3">
           <Button variant="outline" size="sm" onClick={() => onEdit(unit)}>
             <Pencil className="w-4 h-4" />
             ערוך

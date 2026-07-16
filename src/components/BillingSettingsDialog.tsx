@@ -26,6 +26,7 @@ import {
   listHebrewMonthsForYear,
   type BillingCalendar,
 } from '@/utils/billingSchedule';
+import { localDateISO } from '@/utils/date';
 
 interface BillingSettingsDialogProps {
   open: boolean;
@@ -41,8 +42,6 @@ interface BillingSettingsDialogProps {
   }) => Promise<void>;
 }
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-
 export function BillingSettingsDialog({
   open,
   tenancy,
@@ -53,7 +52,7 @@ export function BillingSettingsDialog({
 }: BillingSettingsDialogProps) {
   const [calendar, setCalendar] = useState<BillingCalendar>('gregorian');
   const [dueDay, setDueDay] = useState('1');
-  const [startDate, setStartDate] = useState(todayISO());
+  const [startDate, setStartDate] = useState(localDateISO());
   const [hebrewStartDay, setHebrewStartDay] = useState('1');
   const [hebrewStartMonth, setHebrewStartMonth] = useState('');
   const [hebrewStartYear, setHebrewStartYear] = useState('');
@@ -61,7 +60,8 @@ export function BillingSettingsDialog({
 
   useEffect(() => {
     if (!open || !tenancy) return;
-    const nextStartDate = settings?.schedule_start_date ?? (tenancy.start_date > todayISO() ? tenancy.start_date : todayISO());
+    const today = localDateISO();
+    const nextStartDate = settings?.schedule_start_date ?? (tenancy.start_date > today ? tenancy.start_date : today);
     const hebrewStart = hebrewDateParts(nextStartDate);
     setCalendar((settings?.calendar_type as BillingCalendar | undefined) ?? 'gregorian');
     setDueDay(String(settings?.due_day ?? 1));
@@ -77,7 +77,7 @@ export function BillingSettingsDialog({
   ), [hebrewStartYear, startDate]);
 
   const hebrewStartYearOptions = useMemo(() => {
-    const currentYear = hebrewDateParts(todayISO()).year;
+    const currentYear = hebrewDateParts(localDateISO()).year;
     const selectedYear = Number(hebrewStartYear || currentYear);
     const years = new Set<number>();
     for (let year = currentYear - 1; year <= currentYear + 6; year += 1) years.add(year);
@@ -210,7 +210,7 @@ export function BillingSettingsDialog({
               <Label>מתאריך עברי</Label>
               <div className="grid grid-cols-3 gap-2">
                 <Select value={hebrewStartDay} onValueChange={(value) => updateHebrewStart({ day: value })}>
-                  <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-12 rounded-xl" aria-label="יום ההתחלה העברי"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {HEBREW_DAY_LABELS.map((label, index) => (
                       <SelectItem key={label} value={String(index + 1)}>{label}</SelectItem>
@@ -218,7 +218,7 @@ export function BillingSettingsDialog({
                   </SelectContent>
                 </Select>
                 <Select value={hebrewStartMonth} onValueChange={(value) => updateHebrewStart({ monthKey: value })}>
-                  <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="חודש" /></SelectTrigger>
+                  <SelectTrigger className="h-12 rounded-xl" aria-label="חודש ההתחלה העברי"><SelectValue placeholder="חודש" /></SelectTrigger>
                   <SelectContent>
                     {hebrewStartMonths.map((month) => (
                       <SelectItem key={month.key} value={month.key}>{month.label}</SelectItem>
@@ -226,7 +226,7 @@ export function BillingSettingsDialog({
                   </SelectContent>
                 </Select>
                 <Select value={hebrewStartYear} onValueChange={(value) => updateHebrewStart({ year: value })}>
-                  <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-12 rounded-xl" aria-label="שנת ההתחלה העברית"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {hebrewStartYearOptions.map((year) => (
                       <SelectItem key={year} value={String(year)}>{hebrewYearLabel(year)}</SelectItem>

@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { TenancyWithNames } from '@/api/tenancies';
 import type { PaymentTerm } from '@/types';
 import { generateBillingSchedule, type BillingCalendar } from '@/utils/billingSchedule';
+import { localDateISO } from '@/utils/date';
 
 function humanize(e: unknown): string {
   const msg = e instanceof Error ? e.message : '';
@@ -44,7 +45,9 @@ export const useBilling = () => {
   const defaultScheduleIdsRef = useRef(new Set<string>());
   const [pendingTenancyIds, setPendingTenancyIds] = useState<Set<string>>(new Set());
 
-  const { data: charges = [], isLoading } = useQuery({
+  const {
+    data: charges = [], isLoading, error: chargesError, refetch: refetchCharges,
+  } = useQuery({
     queryKey: KEY,
     queryFn: async () => {
       await materializeDueCharges();
@@ -53,19 +56,25 @@ export const useBilling = () => {
     enabled: !!user,
   });
 
-  const { data: paymentTerms = [], isLoading: areTermsLoading } = useQuery({
+  const {
+    data: paymentTerms = [], isLoading: areTermsLoading, error: termsError, refetch: refetchTerms,
+  } = useQuery({
     queryKey: ['payment-terms', user?.id],
     queryFn: listPaymentTerms,
     enabled: !!user,
   });
 
-  const { data: billingSettings = [], isLoading: areSettingsLoading } = useQuery({
+  const {
+    data: billingSettings = [], isLoading: areSettingsLoading, isSuccess: areSettingsReady, error: settingsError, refetch: refetchSettings,
+  } = useQuery({
     queryKey: ['billing-settings', user?.id],
     queryFn: listBillingSettings,
     enabled: !!user,
   });
 
-  const { data: billingOccurrences = [], isLoading: areOccurrencesLoading } = useQuery({
+  const {
+    data: billingOccurrences = [], isLoading: areOccurrencesLoading, error: occurrencesError, refetch: refetchOccurrences,
+  } = useQuery({
     queryKey: ['billing-occurrences', user?.id],
     queryFn: listBillingOccurrences,
     enabled: !!user,
@@ -86,7 +95,7 @@ export const useBilling = () => {
   }, [billingOccurrences]);
 
   const currentOccurrenceByTenancyId = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     const map = new Map<string, (typeof billingOccurrences)[number]>();
     occurrencesByTenancyId.forEach((occurrences, tenancyId) => {
       const pastOrToday = occurrences.filter((item) => item.due_date <= today);
@@ -106,7 +115,7 @@ export const useBilling = () => {
   }, [charges]);
 
   const scheduledPeriod = useCallback((tenancyId: string, frequencyMonths: 1 | 2 = 1, startsOnSequence = 1) => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     const occurrence = frequencyMonths === 1 && startsOnSequence === 1
       ? currentOccurrenceByTenancyId.get(tenancyId)
       : (() => {
@@ -178,7 +187,7 @@ export const useBilling = () => {
 
   const ensureDefaultSchedules = useCallback(async (tenancies: TenancyWithNames[]) => {
     if (!user) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     const missing = tenancies.filter((tenancy) => (
       !billingSettingsByTenancyId.has(tenancy.id)
       && !defaultScheduleIdsRef.current.has(tenancy.id)
@@ -344,7 +353,7 @@ export const useBilling = () => {
         await addMeterReading({
           unit_id: input.tenancy.unit_id,
           meter_kind: input.paymentType,
-          reading_date: new Date().toISOString().slice(0, 10),
+          reading_date: localDateISO(),
           value: Number(input.currentReading),
         });
       }
@@ -379,6 +388,13 @@ export const useBilling = () => {
     startsOnSequence: number;
   }) => {
     await runForTenancy(`additional:${input.tenancy.id}`, async () => {
+      const normalizedLabel = input.label.trim().toLocaleLowerCase('he');
+      const duplicateTerm = paymentTerms.find((term) => (
+        term.tenancy_id === input.tenancy.id
+        && term.payment_type === input.paymentType
+        && term.label.trim().toLocaleLowerCase('he') === normalizedLabel
+      ));
+      if (duplicateTerm) throw new Error(`כבר קיימת הגדרת תשלום בשם „${input.label.trim()}”. אפשר לערוך אותה במקום להוסיף שוב`);
       if (input.calculationType === 'meter') {
         const previous = Number(input.previousReading ?? 0);
         const current = Number(input.currentReading ?? 0);
@@ -401,7 +417,7 @@ export const useBilling = () => {
         frequencyMonths: input.frequencyMonths,
         startsOnSequence: input.startsOnSequence,
       });
-      const scheduled = scheduledPeriod(input.tenancy.id);
+      const scheduled = scheduledPeriod(input.tenancy.id, input.frequencyMonths, input.startsOnSequence);
       const fallback = currentTermPeriod(term.id);
       const period = scheduled ? {
         dueDate: scheduled.dueDate,
@@ -419,7 +435,7 @@ export const useBilling = () => {
         meter_rate: input.calculationType === 'meter' ? Number(input.unitRate ?? 0) : null,
       });
     }, 'התשלום הנוסף נוסף');
-  }, [runForTenancy, scheduledPeriod]);
+  }, [paymentTerms, runForTenancy, scheduledPeriod]);
 
   const updateAdditionalPayment = useCallback(async (input: {
     term: PaymentTerm;
@@ -432,6 +448,14 @@ export const useBilling = () => {
     startsOnSequence: number;
   }) => {
     await runForTenancy(`edit-term:${input.term.id}`, async () => {
+      const normalizedLabel = input.label.trim().toLocaleLowerCase('he');
+      const duplicateTerm = paymentTerms.find((term) => (
+        term.id !== input.term.id
+        && term.tenancy_id === input.term.tenancy_id
+        && term.payment_type === input.paymentType
+        && term.label.trim().toLocaleLowerCase('he') === normalizedLabel
+      ));
+      if (duplicateTerm) throw new Error(`כבר קיימת הגדרת תשלום בשם „${input.label.trim()}”`);
       const updatedTerm = await updatePaymentTermSettings({
         termId: input.term.id,
         paymentType: input.paymentType,
@@ -455,7 +479,7 @@ export const useBilling = () => {
       }
       await materializeDueCharges();
     }, 'הגדרת התשלום עודכנה');
-  }, [charges, runForTenancy]);
+  }, [charges, paymentTerms, runForTenancy]);
 
   const updateUtilityPaymentSettings = useCallback(async (input: {
     term: PaymentTerm;
@@ -624,10 +648,15 @@ export const useBilling = () => {
     billingSettings,
     billingOccurrences,
     billingSettingsByTenancyId,
+    areSettingsReady,
     occurrencesByTenancyId,
     currentOccurrenceByTenancyId,
     currentRentByTenancyId,
     isLoading: isLoading || areTermsLoading || areSettingsLoading || areOccurrencesLoading,
+    error: chargesError ?? termsError ?? settingsError ?? occurrencesError,
+    refetch: () => Promise.all([
+      refetchCharges(), refetchTerms(), refetchSettings(), refetchOccurrences(),
+    ]),
     saveBillingSettings,
     ensureDefaultSchedules,
     markCurrentRentPaid,

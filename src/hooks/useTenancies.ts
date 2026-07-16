@@ -30,7 +30,7 @@ export const useTenancies = () => {
   const qc = useQueryClient();
   const invalidate = () => qc.invalidateQueries({ queryKey: KEY });
 
-  const { data: tenancies = [], isLoading } = useQuery({
+  const { data: tenancies = [], isLoading, error, refetch } = useQuery({
     queryKey: KEY,
     queryFn: listTenancies,
     enabled: !!user,
@@ -71,6 +71,8 @@ export const useTenancies = () => {
     activeByUnitId,
     activeByTenantId,
     isLoading,
+    error,
+    refetch,
     // *Async: the tenant form drives create/end/update as a sequence of
     // dependent writes (e.g. end the old tenancy, then create the new one),
     // so callers need to await each step and react to failure — not just

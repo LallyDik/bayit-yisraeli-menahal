@@ -5,11 +5,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
+
+const authErrorMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  if (message.includes('Invalid login credentials')) return 'כתובת המייל או הסיסמה אינם נכונים.';
+  if (message.includes('Email not confirmed')) return 'צריך לאשר את כתובת המייל לפני ההתחברות.';
+  if (message.includes('User already registered')) return 'כבר קיים חשבון עם כתובת המייל הזו.';
+  if (message.toLowerCase().includes('password')) return 'הסיסמה חייבת לכלול לפחות 6 תווים.';
+  if (message.toLowerCase().includes('rate limit')) return 'בוצעו יותר מדי ניסיונות. המתינו מעט ונסו שוב.';
+  return 'לא הצלחנו להשלים את הפעולה. בדקו את הפרטים ונסו שוב.';
+};
 
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signInWithGoogle, signUp } = useAuth();
@@ -23,7 +35,7 @@ export const Auth = () => {
       if (message.includes('provider is not enabled') || message.includes('Unsupported provider')) {
         toast.error('הכניסה עם Google עדיין לא הופעלה בהגדרות המערכת.');
       } else {
-        toast.error('לא ניתן להתחבר עם Google כרגע. נסה שוב.');
+        toast.error('לא ניתן להתחבר עם Google כרגע. נסו שוב.');
       }
       setGoogleLoading(false);
     }
@@ -41,14 +53,14 @@ export const Auth = () => {
         toast.success('החשבון נוצר בהצלחה');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'אירעה שגיאה בהתחברות');
+      toast.error(authErrorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center p-6">
+    <div className="flex items-center justify-center px-0 py-4 sm:p-6">
       <Card className="w-full max-w-md rounded-[2rem] border-border border-t-4 border-t-primary shadow-none">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-display text-foreground">
@@ -64,6 +76,7 @@ export const Auth = () => {
             variant="outline"
             className="w-full rounded-xl bg-white"
             disabled={loading || googleLoading}
+            aria-busy={googleLoading}
             onClick={handleGoogleSignIn}
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
@@ -72,6 +85,7 @@ export const Auth = () => {
               <path fill="#FBBC05" d="M6.39 13.9A6.01 6.01 0 0 1 6.08 12c0-.66.11-1.3.31-1.9V7.5H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.5l3.35-2.6Z" />
               <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.5 3.83 1.5l2.87-2.88A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.5l3.35 2.6C7.18 7.73 9.39 5.97 12 5.97Z" />
             </svg>
+            {googleLoading && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {googleLoading ? 'מעביר ל-Google...' : 'המשך עם Google'}
           </Button>
 
@@ -85,21 +99,33 @@ export const Auth = () => {
             <div className="space-y-2">
               <Label htmlFor="email">כתובת מייל</Label>
               <Input
-                id="email" type="email" value={email} required className="text-right"
+                id="email" type="email" value={email} required autoComplete="email" inputMode="email" className="text-right"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="הכנס כתובת מייל"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">סיסמה</Label>
-              <Input
-                id="password" type="password" value={password} required minLength={6}
-                className="text-right"
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="הכנס סיסמה"
-              />
+              <div className="relative">
+                <Input
+                  id="password" type={showPassword ? 'text' : 'password'} value={password} required minLength={6}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  className="pe-11 text-right"
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="הכנס סיסמה"
+                />
+                <button
+                  type="button"
+                  className="absolute end-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'הסתרת הסיסמה' : 'הצגת הסיסמה'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+            <Button type="submit" className="w-full" disabled={loading || googleLoading} aria-busy={loading}>
+              {loading && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {loading ? 'מעבד...' : isLogin ? 'התחבר' : 'צור חשבון'}
             </Button>
           </form>

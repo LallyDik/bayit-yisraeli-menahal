@@ -33,6 +33,7 @@ import {
   ReceiptText,
   Settings,
   Trash2,
+  Users,
   WalletCards,
   Zap,
 } from 'lucide-react';
@@ -45,6 +46,7 @@ import type { TenancyWithNames } from '@/api/tenancies';
 import type { BillingOccurrence, BillingSettings, PaymentTerm } from '@/types';
 import type { BillingCalendar } from '@/utils/billingSchedule';
 import { formatBillingDate, formatBillingShortDate } from '@/utils/billingSchedule';
+import { localDateISO } from '@/utils/date';
 
 type PaymentState = 'paid' | 'partial' | 'unpaid';
 
@@ -218,7 +220,7 @@ function UtilityCard({
   };
 
   return (
-    <div className="payments-card flex flex-col self-start rounded-2xl border bg-card p-4 shadow-sm">
+    <div className="payments-card flex flex-col self-start rounded-2xl border bg-card p-4 shadow-sm" data-guide={`${type}-card`}>
       {/* Header — identity, status, and the quiet settings control */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -232,7 +234,7 @@ function UtilityCard({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <PaymentBadge charge={currentCharge} />
-          <Button type="button" size="sm" variant="outline" className="rounded-full bg-muted" onClick={onEditSettings} aria-label={`הגדרות ${title}`}>
+          <Button type="button" size="sm" variant="outline" className="rounded-full bg-muted" onClick={onEditSettings} aria-label={`הגדרות ${title}`} data-guide={type === 'electricity' ? 'electricity-settings' : undefined}>
             <Settings className="h-4 w-4" />
             הגדרות
           </Button>
@@ -284,7 +286,8 @@ function UtilityCard({
                           step="0.01"
                           value={currentReading}
                           onChange={(event) => setCurrentReading(event.target.value)}
-                          className="h-11 rounded-xl nums"
+                            className="h-11 rounded-xl nums"
+                            data-guide={type === 'electricity' ? 'electricity-reading' : undefined}
                         />
                       </div>
                     </div>
@@ -319,13 +322,13 @@ function UtilityCard({
                   {currentCharge ? (
                     <div className="flex gap-2">
                       <Button type="button" size="sm" variant="ghost" className="rounded-full text-muted-foreground" onClick={() => setEditingCompute(false)}>בטל</Button>
-                      <Button type="button" size="sm" className="rounded-full" onClick={() => { void handleCalculate(); setEditingCompute(false); }} disabled={isCalculating || !canCompute}>
+                      <Button type="button" size="sm" className="rounded-full" onClick={() => { void handleCalculate(); setEditingCompute(false); }} disabled={isCalculating || !canCompute} data-guide={type === 'electricity' ? 'electricity-create-charge' : undefined}>
                         <Calculator className="h-4 w-4" />
                         {isCalculating ? 'שומר...' : 'עדכן חיוב'}
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" className="h-11 rounded-full sm:h-9" onClick={() => { void handleCalculate(); }} disabled={isCalculating || !canCompute}>
+                    <Button size="sm" className="h-11 rounded-full sm:h-9" onClick={() => { void handleCalculate(); }} disabled={isCalculating || !canCompute} data-guide={type === 'electricity' ? 'electricity-create-charge' : undefined}>
                       <Plus className="h-4 w-4" />
                       {isCalculating ? 'שומר...' : 'צור חיוב'}
                     </Button>
@@ -354,12 +357,12 @@ function UtilityCard({
                 שולם ₪{shownPaid(Number(currentCharge.paid_amount), Number(currentCharge.amount_due)).toLocaleString()} מתוך ₪{Number(currentCharge.amount_due).toLocaleString()}
               </p>
               <PaidMeter paid={Number(currentCharge.paid_amount)} due={Number(currentCharge.amount_due)} />
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={paymentState(currentCharge) === 'paid' || isMarking} onClick={() => { void onMarkPaid(currentCharge); }}>
+              <div className="mt-3 flex flex-wrap gap-2" data-guide={`${type}-payment-actions`}>
+                <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={paymentState(currentCharge) === 'paid' || isMarking} onClick={() => { void onMarkPaid(currentCharge).catch(() => undefined); }} data-guide={type === 'electricity' ? 'electricity-mark-paid' : undefined}>
                   <CheckCircle className="h-4 w-4" />
                   {isMarking ? 'שומר...' : 'סמן כשולם'}
                 </Button>
-                <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={isMarking} onClick={() => onEditCharge(currentCharge)}>
+                <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={isMarking} onClick={() => onEditCharge(currentCharge)} data-guide={type === 'electricity' ? 'electricity-partial' : undefined}>
                   תשלום חלקי
                 </Button>
               </div>
@@ -383,6 +386,9 @@ interface PaymentsPageProps {
   currentRentByTenancyId: Map<string, ChargeWithPaid>;
   isLoading: boolean;
   pendingKeys: Set<string>;
+  focusedTenancyId?: string | null;
+  onClearFocus: () => void;
+  onAddTenant: () => void;
   onMarkRentPaid: (tenancy: TenancyWithNames) => Promise<void>;
   onSaveRentPayment: (input: { tenancy: TenancyWithNames; amountDue: number; paidAmount: number; paidAt: string }) => Promise<void>;
   onSaveUtilityCharge: UtilityCardProps['onCalculate'];
@@ -449,6 +455,9 @@ export function PaymentsPage({
   currentRentByTenancyId,
   isLoading,
   pendingKeys,
+  focusedTenancyId = null,
+  onClearFocus,
+  onAddTenant,
   onMarkRentPaid,
   onSaveRentPayment,
   onSaveUtilityCharge,
@@ -472,10 +481,24 @@ export function PaymentsPage({
   const [editingSchedule, setEditingSchedule] = useState<TenancyWithNames | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  const focusedTenancy = useMemo(
+    () => tenancies.find((tenancy) => tenancy.id === focusedTenancyId) ?? null,
+    [focusedTenancyId, tenancies],
+  );
+  const visibleTenancies = useMemo(
+    () => (focusedTenancy ? [focusedTenancy] : tenancies),
+    [focusedTenancy, tenancies],
+  );
+  const visibleTenancyIds = useMemo(() => new Set(visibleTenancies.map((tenancy) => tenancy.id)), [visibleTenancies]);
+  const historyCharges = focusedTenancy
+    ? charges.filter((charge) => charge.tenancy_id === focusedTenancy.id)
+    : charges;
+  const historyTenancies = focusedTenancy ? [focusedTenancy] : allTenancies;
+
   const dueCharges = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return charges.filter((charge) => charge.due_date <= today);
-  }, [charges]);
+    const today = localDateISO();
+    return charges.filter((charge) => visibleTenancyIds.has(charge.tenancy_id) && charge.due_date <= today);
+  }, [charges, visibleTenancyIds]);
   const totalDue = dueCharges.reduce((sum, charge) => sum + Number(charge.amount_due), 0);
   const totalPaid = dueCharges.reduce((sum, charge) => sum + Number(charge.paid_amount), 0);
   const startOptionsForTenancy = (tenancy: TenancyWithNames | null) => {
@@ -491,7 +514,7 @@ export function PaymentsPage({
   if (isLoading) return <p className="py-12 text-center text-muted-foreground">טוען תשלומים...</p>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-guide="payments-page">
       <section className="rounded-[2rem] border bg-card p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -515,13 +538,33 @@ export function PaymentsPage({
         </div>
       </section>
 
-      {tenancies.length === 0 ? (
-        <Card className="border-dashed"><CardContent className="p-8 text-center text-muted-foreground">אין כרגע שכירויות פעילות.</CardContent></Card>
-      ) : tenancies.map((tenancy) => {
+      {focusedTenancy && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-primary">תצוגה ממוקדת</p>
+            <p className="truncate font-semibold">{focusedTenancy.tenant_name} · {focusedTenancy.unit_name}</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" className="shrink-0 rounded-full bg-background" onClick={onClearFocus}>
+            <Users className="h-4 w-4" />
+            הצגת כל השוכרים
+          </Button>
+        </div>
+      )}
+
+      {visibleTenancies.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground" aria-hidden="true" />
+            <h3 className="font-display text-lg">כדי לנהל תשלומים צריך שכירות פעילה</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">הוסיפו שוכר ושייכו אותו ליחידה. מסך התשלומים ייפתח עבורו אוטומטית.</p>
+            <Button type="button" className="mt-5 rounded-full" onClick={onAddTenant}><Plus className="h-4 w-4" />הוספת שוכר</Button>
+          </CardContent>
+        </Card>
+      ) : visibleTenancies.map((tenancy) => {
         const rentCharge = currentRentByTenancyId.get(tenancy.id);
         const tenantTerms = paymentTerms.filter((term) => term.tenancy_id === tenancy.id);
         const additionalTerms = tenantTerms.filter((term) => !['electricity', 'water'].includes(term.payment_type));
-        const today = new Date().toISOString().slice(0, 10);
+        const today = localDateISO();
         const occurrence = currentOccurrenceByTenancyId.get(tenancy.id);
         const occurrenceIsDue = occurrence ? occurrence.due_date <= today : false;
         const schedule = billingSettingsByTenancyId.get(tenancy.id);
@@ -630,12 +673,12 @@ export function PaymentsPage({
                   </div>
                   <PaidMeter paid={rentPaid} due={rentDue} />
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => { void onMarkRentPaid(tenancy); }} disabled={rentDue <= rentPaid || pendingKeys.has(tenancy.id)}>
+                <div className="mt-4 flex flex-wrap gap-2" data-guide="rent-payment-actions">
+                  <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => { void onMarkRentPaid(tenancy).catch(() => undefined); }} disabled={rentDue <= rentPaid || pendingKeys.has(tenancy.id)} data-guide="rent-mark-paid">
                     <CheckCircle className="h-4 w-4" />
                     {pendingKeys.has(tenancy.id) ? 'שומר...' : 'סמן כשולם'}
                   </Button>
-                  <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => setEditingRent(tenancy)} disabled={pendingKeys.has(tenancy.id)}>
+                  <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => setEditingRent(tenancy)} disabled={pendingKeys.has(tenancy.id)} data-guide="rent-partial">
                     תשלום חלקי
                   </Button>
                 </div>
@@ -705,6 +748,7 @@ export function PaymentsPage({
         tenancy={addingFor}
         initialTerm={null}
         startOptions={startOptionsForTenancy(addingFor)}
+        defaultStartSequence={addingFor ? currentOccurrenceByTenancyId.get(addingFor.id)?.sequence_no : undefined}
         isSaving={addingFor ? pendingKeys.has(`additional:${addingFor.id}`) : false}
         onOpenChange={(open) => { if (!open) setAddingFor(null); }}
         onSave={onAddAdditionalPayment}
@@ -773,8 +817,8 @@ export function PaymentsPage({
       />
       <PaymentHistoryDialog
         open={historyOpen}
-        charges={charges}
-        tenancies={allTenancies}
+        charges={historyCharges}
+        tenancies={historyTenancies}
         onOpenChange={setHistoryOpen}
         onEditCharge={(tenancy, charge) => {
           setHistoryOpen(false);
@@ -809,7 +853,7 @@ export function PaymentsPage({
               onClick={(event) => {
                 event.preventDefault();
                 if (!termToDelete) return;
-                void onDeletePaymentTerm(termToDelete).then(() => setTermToDelete(null));
+                void onDeletePaymentTerm(termToDelete).then(() => setTermToDelete(null)).catch(() => undefined);
               }}
             >
               מחק תשלום
@@ -903,13 +947,13 @@ function MeterTermRow({
               {charge ? (
                 <div className="flex gap-2">
                   <Button type="button" size="sm" variant="ghost" className="rounded-full text-muted-foreground" onClick={() => setEditingCompute(false)}>בטל</Button>
-                  <Button type="button" size="sm" className="rounded-full" disabled={isSaving || !canSave} onClick={() => { void onSave({ term, previousReading: Number(previousReading), currentReading: Number(currentReading), unitRate: Number(unitRate) }); setEditingCompute(false); }}>
+                  <Button type="button" size="sm" className="rounded-full" disabled={isSaving || !canSave} onClick={() => { void onSave({ term, previousReading: Number(previousReading), currentReading: Number(currentReading), unitRate: Number(unitRate) }).then(() => setEditingCompute(false)).catch(() => undefined); }}>
                     <Calculator className="h-4 w-4" />
                     {isSaving ? 'שומר...' : 'עדכן חיוב'}
                   </Button>
                 </div>
               ) : (
-                <Button size="sm" className="h-11 rounded-full sm:h-9" disabled={isSaving || !canSave} onClick={() => { void onSave({ term, previousReading: Number(previousReading), currentReading: Number(currentReading), unitRate: Number(unitRate) }); }}>
+                <Button size="sm" className="h-11 rounded-full sm:h-9" disabled={isSaving || !canSave} onClick={() => { void onSave({ term, previousReading: Number(previousReading), currentReading: Number(currentReading), unitRate: Number(unitRate) }).catch(() => undefined); }}>
                   <Plus className="h-4 w-4" />
                   {isSaving ? 'שומר...' : 'צור חיוב'}
                 </Button>
@@ -933,7 +977,7 @@ function MeterTermRow({
           <p className="nums text-sm text-muted-foreground">שולם ₪{shownPaid(Number(charge.paid_amount), Number(charge.amount_due)).toLocaleString()} מתוך ₪{Number(charge.amount_due).toLocaleString()}</p>
           <PaidMeter paid={Number(charge.paid_amount)} due={Number(charge.amount_due)} />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={paymentState(charge) === 'paid' || isMarking} onClick={() => { void onMarkPaid(charge); }}>
+            <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={paymentState(charge) === 'paid' || isMarking} onClick={() => { void onMarkPaid(charge).catch(() => undefined); }}>
               <CheckCircle className="h-4 w-4" />
               {isMarking ? 'שומר...' : 'סמן כשולם'}
             </Button>
@@ -1013,13 +1057,13 @@ function FixedTermRow({
 
       <div className="mt-4 flex flex-wrap gap-2">
         {!charge ? (
-          <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={isSaving || amount <= 0} onClick={() => { void onSave({ term, fixedAmount: amount }); }}>
+          <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={isSaving || amount <= 0} onClick={() => { void onSave({ term, fixedAmount: amount }).catch(() => undefined); }}>
             <Plus className="h-4 w-4" />
             {isSaving ? 'שומר...' : 'צור חיוב'}
           </Button>
         ) : (
           <>
-            <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={paymentState(charge) === 'paid' || isMarking} onClick={() => { void onMarkPaid(charge); }}>
+            <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" disabled={paymentState(charge) === 'paid' || isMarking} onClick={() => { void onMarkPaid(charge).catch(() => undefined); }}>
               <CheckCircle className="h-4 w-4" />
               {isMarking ? 'שומר...' : 'סמן כשולם'}
             </Button>
@@ -1085,9 +1129,10 @@ function UtilitySettingsDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-background p-1" role="group" aria-label={`שיטת חישוב ${title}`}>
             <button
               type="button"
+              aria-pressed={calculationType === 'meter'}
               onClick={() => setCalculationType('meter')}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${calculationType === 'meter' ? 'bg-foreground text-background' : 'hover:bg-card'}`}
             >
@@ -1095,6 +1140,7 @@ function UtilitySettingsDialog({
             </button>
             <button
               type="button"
+              aria-pressed={calculationType === 'fixed'}
               onClick={() => setCalculationType('fixed')}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${calculationType === 'fixed' ? 'bg-foreground text-background' : 'hover:bg-card'}`}
             >
@@ -1154,7 +1200,7 @@ function UtilitySettingsDialog({
                 unitRate: Number(unitRate),
                 frequencyMonths,
                 startsOnSequence: Number(startsOnSequence),
-              });
+              }).catch(() => undefined);
             }}
           >
             {isSaving ? 'שומר...' : 'שמור הגדרה'}

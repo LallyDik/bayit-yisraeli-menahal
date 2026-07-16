@@ -21,7 +21,7 @@ export const useTenants = () => {
   const onError = (e: unknown) =>
     toast.error(e instanceof Error ? e.message : 'הפעולה נכשלה');
 
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenants = [], isLoading, error, refetch } = useQuery({
     queryKey: KEY,
     queryFn: listTenants,
     enabled: !!user,
@@ -49,6 +49,9 @@ export const useTenants = () => {
   return {
     tenants,
     isLoading,
+    error,
+    refetch,
+    isSaving: create.isPending || update.isPending,
     // *Async: creating/editing a tenant can chain into a tenancy write (see
     // Index.tsx), which needs to await the tenant write and react to its
     // failure before touching the tenancy. onSuccess/onError above still run

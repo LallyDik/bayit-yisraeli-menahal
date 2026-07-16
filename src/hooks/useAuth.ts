@@ -8,6 +8,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  completeOnboarding: (version: number) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -56,12 +57,23 @@ export const useAuthProvider = (): AuthContextType => {
     if (error) throw error;
   };
 
+  const completeOnboarding = async (version: number) => {
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        ...(user?.user_metadata ?? {}),
+        onboarding_version: version,
+        onboarding_completed_at: new Date().toISOString(),
+      },
+    });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
 
-  return { user, loading, signIn, signInWithGoogle, signUp, signOut };
+  return { user, loading, signIn, signInWithGoogle, signUp, completeOnboarding, signOut };
 };
 
 export { AuthContext };

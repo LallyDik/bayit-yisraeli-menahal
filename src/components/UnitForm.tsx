@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -30,15 +30,17 @@ interface UnitFormProps {
     year_built_or_renovated: number | null;
     air_conditioned: boolean | null;
     furnishing: string | null;
-  }) => void;
+  }) => void | Promise<void>;
   initialData?: Partial<Unit>;
   submitLabel?: string;
+  isSubmitting?: boolean;
 }
 
 export const UnitForm: React.FC<UnitFormProps> = ({
   onSubmit,
   initialData = {},
   submitLabel = 'הוסף יחידה',
+  isSubmitting = false,
 }) => {
   const [name, setName] = useState(initialData.name ?? '');
   const [rent, setRent] = useState(initialData.default_rent?.toString() ?? '');
@@ -79,19 +81,25 @@ export const UnitForm: React.FC<UnitFormProps> = ({
           <Plus className="w-6 h-6" />
           {submitLabel}
         </CardTitle>
+        <CardDescription className="text-foreground/70">שם היחידה מספיק כדי להתחיל. את כל השאר אפשר להשלים גם בהמשך.</CardDescription>
       </CardHeader>
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="unit-name" className="text-lg font-medium">שם היחידה</Label>
+            <Label htmlFor="unit-name" className="text-lg font-medium">שם היחידה <span className="text-destructive" aria-hidden="true">*</span></Label>
             <Input
-              id="unit-name" value={name} required className="text-lg p-3"
+              id="unit-name" value={name} required autoFocus className="text-lg p-3"
               onChange={(e) => setName(e.target.value)}
               placeholder="לדוגמה: דירה 3, קומה ב'"
             />
             <p className="text-sm text-muted-foreground">
               זה כל מה שצריך כדי לפתוח יחידה. אפשר להשלים את השאר מתי שתרצה.
             </p>
+          </div>
+
+          <div className="border-t pt-5">
+            <h3 className="font-display text-lg">פרטים נוספים</h3>
+            <p className="mt-1 text-sm text-muted-foreground">כל השדות הבאים אופציונליים ועוזרים לזהות ולתעד את הנכס.</p>
           </div>
 
           <div className="space-y-2">
@@ -125,9 +133,9 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base font-medium">מצב — אופציונלי</Label>
+              <Label htmlFor="unit-condition" className="text-base font-medium">מצב — אופציונלי</Label>
               <Select value={condition} onValueChange={setCondition}>
-                <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="unit-condition" className="text-lg p-3"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
                   {CONDITIONS.map((c) => (
@@ -138,9 +146,9 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base font-medium">ריהוט — אופציונלי</Label>
+              <Label htmlFor="unit-furnishing" className="text-base font-medium">ריהוט — אופציונלי</Label>
               <Select value={furnishing} onValueChange={setFurnishing}>
-                <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="unit-furnishing" className="text-lg p-3"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
                   {FURNISHINGS.map((f) => (
@@ -151,9 +159,9 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base font-medium">ממוזגת — אופציונלי</Label>
+              <Label htmlFor="unit-air-conditioned" className="text-base font-medium">ממוזגת — אופציונלי</Label>
               <Select value={airConditioned} onValueChange={setAirConditioned}>
-                <SelectTrigger className="text-lg p-3"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="unit-air-conditioned" className="text-lg p-3"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NOT_SPECIFIED}>לא צוין</SelectItem>
                   <SelectItem value="yes">כן</SelectItem>
@@ -192,8 +200,8 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 
           {initialData.id && <AttachmentsSection unitId={initialData.id} />}
 
-          <Button type="submit" className="w-full text-lg py-3">
-            {submitLabel}
+          <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting || !name.trim()} aria-busy={isSubmitting}>
+            {isSubmitting ? 'שומר...' : submitLabel}
           </Button>
         </form>
       </CardContent>

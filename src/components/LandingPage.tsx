@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Auth } from '@/components/Auth';
 
 const scrollTo = (id: string) => () => {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
 };
 
 const FEATURES = [

@@ -4,6 +4,7 @@ import type {
 } from '@/types';
 import type { Json } from '@/types/database';
 import type { BillingCalendar, GeneratedBillingOccurrence } from '@/utils/billingSchedule';
+import { localDateISO } from '@/utils/date';
 
 export type BillablePaymentType = 'rent' | 'electricity' | 'water' | 'gas' | 'committee' | 'custom';
 export type UtilityPaymentType = 'electricity' | 'water';
@@ -14,8 +15,6 @@ export type ChargeWithPaid = Charge & { paid_amount: number };
 type ChargeRow = Charge & {
   payment_allocations: Array<{ amount: number }> | null;
 };
-
-const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const monthParts = (date = new Date()) => {
   const year = date.getFullYear();
@@ -292,7 +291,7 @@ export async function setChargePaymentState(input: {
     p_charge_id: input.charge_id,
     p_amount_due: input.amount_due,
     p_paid_amount: input.paid_amount,
-    p_paid_at: input.paid_at ?? todayISO(),
+    p_paid_at: input.paid_at ?? localDateISO(),
   });
 
   if (error) throw error;
