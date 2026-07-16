@@ -17,9 +17,9 @@ interface TenantCardProps {
 export const TenantCard: React.FC<TenantCardProps> = ({
   tenant, unitName, monthlyRent, onEdit, onArchive,
 }) => (
-  <Card className="card-hover">
+  <Card className={`card-hover [border-inline-start-width:4px] ${unitName ? 'border-primary' : 'border-secondary'}`}>
     <CardHeader className="flex flex-row items-center justify-between gap-2">
-      <CardTitle className="flex items-center gap-2 text-lg">
+      <CardTitle className="flex items-center gap-2 text-lg font-display">
         <User className="w-5 h-5 text-primary" />
         {tenant.name}
       </CardTitle>
@@ -29,7 +29,7 @@ export const TenantCard: React.FC<TenantCardProps> = ({
     </CardHeader>
     <CardContent className="space-y-4">
       {monthlyRent != null && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground nums">
           שכר דירה: ₪{Number(monthlyRent).toLocaleString()} לחודש
         </p>
       )}
@@ -42,7 +42,12 @@ export const TenantCard: React.FC<TenantCardProps> = ({
           <Pencil className="w-4 h-4" />
           ערוך
         </Button>
-        <ConfirmArchive entityName={tenant.name} onConfirm={() => onArchive(tenant.id)} />
+        <ConfirmArchive
+          entityName={tenant.name}
+          entityKind="tenant"
+          activeAssignment={unitName}
+          onConfirm={() => onArchive(tenant.id)}
+        />
       </div>
     </CardContent>
   </Card>

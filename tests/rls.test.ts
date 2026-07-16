@@ -135,6 +135,37 @@ describe('schema invariants', () => {
     expect(e3).toBeNull();
   });
 
+  it('allows only one active tenancy per tenant', async () => {
+    const { data: unit1, error: u1Err } = await alice.from('units').insert({
+      name: `alice-one-tenant-unit1-${run}`,
+    }).select().single();
+    expect(u1Err).toBeNull();
+
+    const { data: unit2, error: u2Err } = await alice.from('units').insert({
+      name: `alice-one-tenant-unit2-${run}`,
+    }).select().single();
+    expect(u2Err).toBeNull();
+
+    const { data: tenant, error: tenantErr } = await alice.from('tenants').insert({
+      name: `alice-one-tenant-${run}`,
+    }).select().single();
+    expect(tenantErr).toBeNull();
+
+    const { error: e1 } = await alice.from('tenancies').insert({
+      tenant_id: tenant!.id,
+      unit_id: unit1!.id,
+      monthly_rent: 3000,
+    }).select().single();
+    expect(e1).toBeNull();
+
+    const { error: e2 } = await alice.from('tenancies').insert({
+      tenant_id: tenant!.id,
+      unit_id: unit2!.id,
+      monthly_rent: 3200,
+    });
+    expect(e2).not.toBeNull();
+  });
+
   it('refuses to delete a unit that has rental history', async () => {
     const { error } = await alice.from('units').delete().eq('id', aliceUnitId).select();
     expect(error).not.toBeNull(); // on delete restrict

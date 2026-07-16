@@ -9,10 +9,14 @@ import { Archive } from 'lucide-react';
 
 interface ConfirmArchiveProps {
   entityName: string;
-  onConfirm: () => void;
+  activeAssignment?: string | null;
+  entityKind: 'unit' | 'tenant';
+  onConfirm: () => void | Promise<void>;
 }
 
-export const ConfirmArchive: React.FC<ConfirmArchiveProps> = ({ entityName, onConfirm }) => (
+export const ConfirmArchive: React.FC<ConfirmArchiveProps> = ({
+  entityName, activeAssignment, entityKind, onConfirm,
+}) => (
   <AlertDialog>
     <AlertDialogTrigger asChild>
       <Button variant="ghost" size="sm">
@@ -20,11 +24,13 @@ export const ConfirmArchive: React.FC<ConfirmArchiveProps> = ({ entityName, onCo
         העבר לארכיון
       </Button>
     </AlertDialogTrigger>
-    <AlertDialogContent>
+    <AlertDialogContent dir="rtl" className="rounded-2xl border-border bg-card text-right">
       <AlertDialogHeader>
         <AlertDialogTitle>להעביר את "{entityName}" לארכיון?</AlertDialogTitle>
-        <AlertDialogDescription>
-          הרשומה תוסתר מהמסך אך לא תימחק — כל ההיסטוריה נשמרת.
+        <AlertDialogDescription className="text-base leading-7">
+          {activeAssignment
+            ? `${entityKind === 'tenant' ? 'השכירות הפעילה תסתיים והיחידה' : 'השכירות הפעילה תסתיים והשוכר'} “${activeAssignment}” יישאר ללא שיוך. הרשומה תועבר לארכיון וההיסטוריה תישמר.`
+            : 'הרשומה תוסתר מהמסך אך לא תימחק — כל ההיסטוריה נשמרת.'}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

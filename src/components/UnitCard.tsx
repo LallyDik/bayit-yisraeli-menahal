@@ -30,9 +30,9 @@ const unitDetails = (unit: Unit): string[] => {
 export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEdit, onArchive }) => {
   const details = unitDetails(unit);
   return (
-    <Card className="card-hover">
+    <Card className={`card-hover [border-inline-start-width:4px] ${activeTenantName ? 'border-primary' : 'border-secondary'}`}>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
+        <CardTitle className="flex items-center gap-2 text-lg font-display">
           <Home className="w-5 h-5 text-primary" />
           {unit.name}
         </CardTitle>
@@ -42,7 +42,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEd
       </CardHeader>
       <CardContent className="space-y-4">
         {unit.default_rent != null && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground nums">
             שכר דירה מבוקש: ₪{Number(unit.default_rent).toLocaleString()}
           </p>
         )}
@@ -56,7 +56,12 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, activeTenantName, onEd
             <Pencil className="w-4 h-4" />
             ערוך
           </Button>
-          <ConfirmArchive entityName={unit.name} onConfirm={() => onArchive(unit.id)} />
+          <ConfirmArchive
+            entityName={unit.name}
+            entityKind="unit"
+            activeAssignment={activeTenantName}
+            onConfirm={() => onArchive(unit.id)}
+          />
         </div>
       </CardContent>
     </Card>

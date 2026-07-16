@@ -18,6 +18,7 @@ interface DashboardProps {
   onEditTenant: (tenant: Tenant) => void;
   onGoUnits: () => void;
   onGoTenants: () => void;
+  children?: React.ReactNode;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -32,6 +33,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onEditTenant,
   onGoUnits,
   onGoTenants,
+  children,
 }) => {
   if (isLoading) {
     return <p className="text-center text-muted-foreground">טוען...</p>;
@@ -43,7 +45,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <CardContent>
           <Home className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">ברוך הבא! התחל בהוספת היחידה הראשונה שלך</h3>
-          <Button onClick={onAddUnit} className="gradient-bg hover:opacity-90 mt-4" size="lg">
+          <Button onClick={onAddUnit} className="mt-4" size="lg">
             <Plus className="w-5 h-5" />
             הוסף יחידה
           </Button>
@@ -60,26 +62,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const activeTenancies = Array.from(activeByUnitId.values());
   const monthlyIncome = activeTenancies.reduce((sum, t) => sum + Number(t.monthly_rent), 0);
-
   const tenantsWithoutUnit = tenants.filter((t) => !activeByTenantId.has(t.id));
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="space-y-10">
+      <section className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <Card
-          className="card-hover cursor-pointer"
+          className="card-hover cursor-pointer md:col-span-5 rounded-[2rem] border-0 bg-primary/70 text-primary-foreground"
           role="button"
           onClick={onGoUnits}
         >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Home className="w-6 h-6 text-primary" />
+              <div className="w-14 h-14 rounded-2xl rotate-3 bg-white/45 flex items-center justify-center">
+                <Home className="w-7 h-7 text-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{units.length}</p>
-                <p className="text-sm text-muted-foreground">יחידות</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-4xl font-display nums">{units.length}</p>
+                <div className="my-2 h-0.5 w-10 bg-secondary" />
+                <p className="text-sm text-foreground/80">יחידות</p>
+                <p className="text-sm text-foreground/70">
                   {occupiedUnits} תפוסות · {vacantUnits} פנויות
                 </p>
               </div>
@@ -88,17 +90,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </Card>
 
         <Card
-          className="card-hover cursor-pointer"
+          className="card-hover cursor-pointer md:col-span-3 rounded-[2rem] border-0 bg-secondary"
           role="button"
           onClick={onGoTenants}
         >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-2xl -rotate-3 bg-white/45 flex items-center justify-center">
+                <Users className="w-6 h-6 text-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{tenants.length}</p>
+                <p className="text-4xl font-display nums">{tenants.length}</p>
+                <div className="my-2 h-0.5 w-10 bg-foreground/25" />
                 <p className="text-sm text-muted-foreground">שוכרים</p>
                 <p className="text-sm text-muted-foreground">
                   {assignedTenants} משויכים · {unassignedTenants} ללא יחידה
@@ -108,14 +111,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="card-hover">
+        <Card className="card-hover md:col-span-4 rounded-[2rem] border-0 bg-accent/90">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                <BarChart className="w-6 h-6 text-orange-600" />
+              <div className="w-12 h-12 rounded-2xl rotate-6 bg-white/45 flex items-center justify-center">
+                <BarChart className="w-6 h-6 text-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">₪{monthlyIncome.toLocaleString()}</p>
+                <p className="text-4xl font-display nums">₪{monthlyIncome.toLocaleString()}</p>
+                <div className="my-2 h-0.5 w-10 bg-foreground/25" />
                 <p className="text-sm text-muted-foreground">הכנסה חודשית</p>
                 <p className="text-sm text-muted-foreground">
                   מ-{activeTenancies.length} חוזים פעילים
@@ -124,18 +128,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      <div className="flex gap-4">
-        <Button onClick={onAddUnit} className="gradient-bg hover:opacity-90" size="lg">
+      <div className="flex flex-wrap gap-3 rounded-[2rem] border bg-card p-4">
+        <Button onClick={onAddUnit} className="rounded-full" size="lg">
           <Plus className="w-5 h-5" />
           הוסף יחידה
         </Button>
-        <Button onClick={onAddTenant} variant="outline" size="lg">
+        <Button onClick={onAddTenant} variant="outline" className="rounded-full" size="lg">
           <Plus className="w-5 h-5" />
           הוסף שוכר
         </Button>
       </div>
+
+      {children}
 
       <div>
         <h2 className="text-2xl font-bold mb-4">מצב היחידות</h2>
@@ -152,13 +158,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onClick={() => onEditUnit(unit)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-semibold">{unit.name}</p>
+                    <div className="flex items-center gap-3">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${tenancy ? 'bg-primary' : 'bg-secondary'}`} aria-hidden="true" />
+                      <div>
+                      <p className="font-display">{unit.name}</p>
                       {tenancy && (
                         <p className="text-sm text-muted-foreground">
-                          {tenancy.tenant_name} · ₪{Number(tenancy.monthly_rent).toLocaleString()} לחודש
+                          <span className="nums">{tenancy.tenant_name} · ₪{Number(tenancy.monthly_rent).toLocaleString()} לחודש</span>
                         </p>
                       )}
+                      </div>
                     </div>
                     <Badge variant={tenancy ? 'default' : 'secondary'}>
                       {tenancy ? 'תפוסה' : 'פנויה'}
@@ -194,6 +203,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
+
     </div>
   );
 };

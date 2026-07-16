@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LogOut, Plus, Home, Users } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Auth } from '@/components/Auth';
 import { useAuth } from '@/hooks/useAuth';
 import { Dashboard } from '@/components/Dashboard';
+import { PaymentsPage } from '@/components/PaymentsPage';
 import { UnitForm } from '@/components/UnitForm';
 import { UnitCard } from '@/components/UnitCard';
 import { useUnits } from '@/hooks/useUnits';
@@ -14,6 +15,7 @@ import { TenantForm } from '@/components/TenantForm';
 import { TenantCard } from '@/components/TenantCard';
 import { useTenants } from '@/hooks/useTenants';
 import { useTenancies } from '@/hooks/useTenancies';
+import { useBilling } from '@/hooks/useBilling';
 import type { Unit, Tenant } from '@/types';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -28,8 +30,36 @@ const Index = () => {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
   const {
-    activeByUnitId, activeByTenantId, createTenancy, endTenancy, updateTenancy,
+    tenancies, activeByUnitId, activeByTenantId, createTenancy, endTenancy, updateTenancy,
   } = useTenancies();
+  const {
+    charges,
+    paymentTerms,
+    billingSettingsByTenancyId,
+    occurrencesByTenancyId,
+    currentOccurrenceByTenancyId,
+    currentRentByTenancyId,
+    isLoading: billingLoading,
+    saveBillingSettings,
+    ensureDefaultSchedules,
+    markCurrentRentPaid,
+    saveCurrentRentPayment,
+    saveUtilityCharge,
+    addAdditionalPayment,
+    updateAdditionalPayment,
+    updateUtilityPaymentSettings,
+    saveUtilityPaymentSettings,
+    saveFixedTermCharge,
+    saveMeterTermCharge,
+    removePaymentTerm,
+    markChargePaid,
+    saveChargePayment,
+    pendingTenancyIds,
+  } = useBilling();
+
+  useEffect(() => {
+    void ensureDefaultSchedules(Array.from(activeByUnitId.values()));
+  }, [activeByUnitId, ensureDefaultSchedules]);
 
   // Saving a tenant with a unit assignment is two sequential writes (tenant,
   // then tenancy). If the first succeeds and the second fails, the tenant
@@ -47,7 +77,7 @@ const Index = () => {
   };
 
   const saveNewTenant = async (
-    fields: TenantFields, unitId: string | null, monthlyRent: number | null,
+    fields: TenantFields, unitId: string | null, monthlyRent: number | null, startDate: string,
   ) => {
     let created: Tenant;
     try {
@@ -61,7 +91,7 @@ const Index = () => {
         tenant_id: created.id,
         unit_id: unitId,
         monthly_rent: monthlyRent ?? 0,
-        start_date: todayISO(),
+        start_date: startDate,
       });
     } catch {
       toast.error(`השוכר "${created.name}" נשמר, אך לא שויך ליחידה. אפשר לשייך אותו דרך עריכת השוכר.`);
@@ -69,7 +99,7 @@ const Index = () => {
   };
 
   const saveEditedTenant = async (
-    tenant: Tenant, fields: TenantFields, unitId: string | null, monthlyRent: number | null,
+    tenant: Tenant, fields: TenantFields, unitId: string | null, monthlyRent: number | null, startDate: string,
   ) => {
     try {
       await updateTenant({ id: tenant.id, patch: fields });
@@ -85,18 +115,25 @@ const Index = () => {
         // Moved to a different unit -> close out the old stay, open a new one.
         await endTenancy({ id: current.id, end_date: todayISO() });
         await createTenancy({
-          tenant_id: tenant.id, unit_id: unitId, monthly_rent: monthlyRent ?? 0, start_date: todayISO(),
+          tenant_id: tenant.id, unit_id: unitId, monthly_rent: monthlyRent ?? 0, start_date: startDate,
         });
       } else if (current && unitId && unitId === current.unit_id) {
         // Same unit — only the rent may have changed. Update in place; ending
         // and recreating would fabricate a fake move-out in the history.
+        const patch: { monthly_rent?: number; start_date?: string } = {};
         if (monthlyRent !== null && Number(monthlyRent) !== Number(current.monthly_rent)) {
-          await updateTenancy({ id: current.id, patch: { monthly_rent: monthlyRent } });
+          patch.monthly_rent = monthlyRent;
+        }
+        if (startDate && startDate !== current.start_date) {
+          patch.start_date = startDate;
+        }
+        if (Object.keys(patch).length > 0) {
+          await updateTenancy({ id: current.id, patch });
         }
       } else if (!current && unitId) {
         // Had no unit, now assigned one for the first time.
         await createTenancy({
-          tenant_id: tenant.id, unit_id: unitId, monthly_rent: monthlyRent ?? 0, start_date: todayISO(),
+          tenant_id: tenant.id, unit_id: unitId, monthly_rent: monthlyRent ?? 0, start_date: startDate,
         });
       }
       // else: no unit before, still no unit -> nothing to do on the tenancy side.
@@ -105,20 +142,36 @@ const Index = () => {
     }
   };
 
-  const handleTenantSubmit = (values: TenantFields & { unit_id: string | null; monthly_rent: number | null }) => {
-    const { unit_id, monthly_rent, ...fields } = values;
+  const handleTenantSubmit = (values: TenantFields & { unit_id: string | null; monthly_rent: number | null; start_date: string }) => {
+    const { unit_id, monthly_rent, start_date, ...fields } = values;
     if (editingTenant) {
-      void saveEditedTenant(editingTenant, fields, unit_id, monthly_rent);
+      void saveEditedTenant(editingTenant, fields, unit_id, monthly_rent, start_date);
     } else {
-      void saveNewTenant(fields, unit_id, monthly_rent);
+      void saveNewTenant(fields, unit_id, monthly_rent, start_date);
     }
     setAddingTenant(false);
     setEditingTenant(null);
   };
 
+  const handleArchiveTenant = async (id: string) => {
+    const activeTenancy = activeByTenantId.get(id);
+    if (activeTenancy) {
+      await endTenancy({ id: activeTenancy.id, end_date: todayISO() });
+    }
+    await archiveTenant(id);
+  };
+
+  const handleArchiveUnit = async (id: string) => {
+    const activeTenancy = activeByUnitId.get(id);
+    if (activeTenancy) {
+      await endTenancy({ id: activeTenancy.id, end_date: todayISO() });
+    }
+    await archiveUnit(id);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-lg">טוען...</p>
@@ -130,44 +183,104 @@ const Index = () => {
   if (!user) return <Auth />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
-      <div className="gradient-bg text-white p-6">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
+    <div className="min-h-screen bg-background page-confetti">
+      <header className="relative overflow-hidden bg-primary/20 text-foreground px-6 pt-8 pb-20 rounded-b-[2.5rem] sm:rounded-b-[4rem]">
+        <div className="absolute -top-16 -left-12 h-48 w-48 rounded-full bg-primary/55" aria-hidden="true" />
+        <div className="absolute -bottom-20 left-1/3 h-40 w-40 rotate-12 rounded-[2.5rem] bg-secondary" aria-hidden="true" />
+        <div className="absolute top-10 right-[44%] h-10 w-10 rounded-full bg-accent" aria-hidden="true" />
+        <div className="relative max-w-6xl mx-auto flex flex-col sm:flex-row justify-between sm:items-center gap-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2">מערכת ניהול שוכרים</h1>
-            <p className="text-xl opacity-90">ניהול מקצועי של נכסים ותשלומים</p>
+            <h1 className="text-4xl sm:text-6xl font-display leading-tight">השכירות מסודרת.<br />הראש שקט.</h1>
+            <p className="mt-3 text-lg text-foreground/70">רואים מי שילם, מה נשאר ומתי מגיע החיוב הבא.</p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-lg">{user.email}</span>
-            <Button onClick={signOut} variant="ghost" size="sm" className="text-white hover:bg-white/20">
+            <span className="max-w-48 truncate rounded-full bg-white/70 px-4 py-2 text-sm nums">{user.email}</span>
+            <Button onClick={signOut} variant="outline" size="sm" className="rounded-full border-foreground/20 bg-white/35 text-foreground hover:bg-foreground hover:text-white">
               <LogOut className="w-4 h-4" />
               התנתק
             </Button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-6xl mx-auto p-6">
+      <main className="relative max-w-6xl mx-auto -mt-10 px-4 sm:px-6 pb-12">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-8 h-auto w-full sm:w-auto rounded-2xl border bg-card p-2 shadow-[0_12px_35px_-18px_rgba(23,50,77,0.45)]">
             <TabsTrigger value="overview">סקירה</TabsTrigger>
+            <TabsTrigger value="payments">תשלומים</TabsTrigger>
             <TabsTrigger value="units">יחידות</TabsTrigger>
             <TabsTrigger value="tenants">שוכרים</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            <Dashboard
-              units={units}
-              tenants={tenants}
-              activeByUnitId={activeByUnitId}
-              activeByTenantId={activeByTenantId}
-              isLoading={isLoading || tenantsLoading}
-              onAddUnit={() => { setTab('units'); setAdding(true); }}
-              onAddTenant={() => { setTab('tenants'); setAddingTenant(true); }}
-              onEditUnit={(u) => { setTab('units'); setEditing(u); }}
-              onEditTenant={(t) => { setTab('tenants'); setEditingTenant(t); }}
-              onGoUnits={() => setTab('units')}
-              onGoTenants={() => setTab('tenants')}
+            <div className="space-y-12">
+              <Dashboard
+                units={units}
+                tenants={tenants}
+                activeByUnitId={activeByUnitId}
+                activeByTenantId={activeByTenantId}
+                isLoading={isLoading || tenantsLoading}
+                onAddUnit={() => { setTab('units'); setAdding(true); }}
+                onAddTenant={() => { setTab('tenants'); setAddingTenant(true); }}
+                onEditUnit={(u) => { setTab('units'); setEditing(u); }}
+                onEditTenant={(t) => { setTab('tenants'); setEditingTenant(t); }}
+                onGoUnits={() => setTab('units')}
+                onGoTenants={() => setTab('tenants')}
+              >
+                <PaymentsPage
+                  tenancies={Array.from(activeByUnitId.values())}
+                  allTenancies={tenancies}
+                  charges={charges}
+                  paymentTerms={paymentTerms}
+                  billingSettingsByTenancyId={billingSettingsByTenancyId}
+                  occurrencesByTenancyId={occurrencesByTenancyId}
+                  currentOccurrenceByTenancyId={currentOccurrenceByTenancyId}
+                  currentRentByTenancyId={currentRentByTenancyId}
+                  isLoading={billingLoading}
+                  pendingKeys={pendingTenancyIds}
+                  onMarkRentPaid={markCurrentRentPaid}
+                  onSaveRentPayment={saveCurrentRentPayment}
+                  onSaveUtilityCharge={saveUtilityCharge}
+                  onMarkChargePaid={markChargePaid}
+                  onSaveChargePayment={saveChargePayment}
+                  onAddAdditionalPayment={addAdditionalPayment}
+                  onUpdateAdditionalPayment={updateAdditionalPayment}
+                  onUpdateUtilityPaymentSettings={updateUtilityPaymentSettings}
+                  onSaveUtilityPaymentSettings={saveUtilityPaymentSettings}
+                  onSaveFixedTermCharge={saveFixedTermCharge}
+                  onSaveMeterTermCharge={saveMeterTermCharge}
+                  onDeletePaymentTerm={removePaymentTerm}
+                  onSaveBillingSettings={saveBillingSettings}
+                />
+              </Dashboard>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <PaymentsPage
+              tenancies={Array.from(activeByUnitId.values())}
+              allTenancies={tenancies}
+              charges={charges}
+              paymentTerms={paymentTerms}
+              billingSettingsByTenancyId={billingSettingsByTenancyId}
+              occurrencesByTenancyId={occurrencesByTenancyId}
+              currentOccurrenceByTenancyId={currentOccurrenceByTenancyId}
+              currentRentByTenancyId={currentRentByTenancyId}
+              isLoading={billingLoading}
+              pendingKeys={pendingTenancyIds}
+              onMarkRentPaid={markCurrentRentPaid}
+              onSaveRentPayment={saveCurrentRentPayment}
+              onSaveUtilityCharge={saveUtilityCharge}
+              onMarkChargePaid={markChargePaid}
+              onSaveChargePayment={saveChargePayment}
+              onAddAdditionalPayment={addAdditionalPayment}
+              onUpdateAdditionalPayment={updateAdditionalPayment}
+              onUpdateUtilityPaymentSettings={updateUtilityPaymentSettings}
+              onSaveUtilityPaymentSettings={saveUtilityPaymentSettings}
+              onSaveFixedTermCharge={saveFixedTermCharge}
+              onSaveMeterTermCharge={saveMeterTermCharge}
+              onDeletePaymentTerm={removePaymentTerm}
+              onSaveBillingSettings={saveBillingSettings}
             />
           </TabsContent>
 
@@ -190,7 +303,7 @@ const Index = () => {
               </div>
             ) : (
               <>
-                <Button onClick={() => setAdding(true)} className="gradient-bg hover:opacity-90 mb-8" size="lg">
+                <Button onClick={() => setAdding(true)} className="mb-8" size="lg">
                   <Plus className="w-5 h-5" />
                   הוסף יחידה
                 </Button>
@@ -213,7 +326,7 @@ const Index = () => {
                         unit={unit}
                         activeTenantName={activeByUnitId.get(unit.id)?.tenant_name ?? null}
                         onEdit={setEditing}
-                        onArchive={archiveUnit}
+                        onArchive={handleArchiveUnit}
                       />
                     ))}
                   </div>
@@ -235,6 +348,7 @@ const Index = () => {
                     ...editingTenant,
                     unit_id: activeByTenantId.get(editingTenant.id)?.unit_id ?? null,
                     monthly_rent: activeByTenantId.get(editingTenant.id)?.monthly_rent ?? null,
+                    start_date: activeByTenantId.get(editingTenant.id)?.start_date ?? todayISO(),
                   } : undefined}
                   submitLabel={editingTenant ? 'עדכן שוכר' : 'הוסף שוכר'}
                   onSubmit={handleTenantSubmit}
@@ -242,7 +356,7 @@ const Index = () => {
               </div>
             ) : (
               <>
-                <Button onClick={() => setAddingTenant(true)} className="gradient-bg hover:opacity-90 mb-8" size="lg">
+                <Button onClick={() => setAddingTenant(true)} className="mb-8" size="lg">
                   <Plus className="w-5 h-5" />
                   הוסף שוכר
                 </Button>
@@ -265,7 +379,7 @@ const Index = () => {
                         unitName={activeByTenantId.get(tenant.id)?.unit_name ?? null}
                         monthlyRent={activeByTenantId.get(tenant.id)?.monthly_rent ?? null}
                         onEdit={setEditingTenant}
-                        onArchive={archiveTenant}
+                        onArchive={handleArchiveTenant}
                       />
                     ))}
                   </div>
@@ -274,7 +388,7 @@ const Index = () => {
             )}
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
   );
 };

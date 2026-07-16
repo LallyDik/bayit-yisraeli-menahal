@@ -74,8 +74,8 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 
   return (
     <Card className="w-full max-w-2xl card-hover">
-      <CardHeader className="gradient-bg text-white">
-        <CardTitle className="flex items-center gap-2 text-xl">
+      <CardHeader className="bg-primary/20 text-foreground border-b-[3px] border-primary">
+        <CardTitle className="flex items-center gap-2 text-xl font-display">
           <Plus className="w-6 h-6" />
           {submitLabel}
         </CardTitle>
@@ -192,7 +192,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 
           {initialData.id && <AttachmentsSection unitId={initialData.id} />}
 
-          <Button type="submit" className="w-full text-lg py-3 gradient-bg hover:opacity-90">
+          <Button type="submit" className="w-full text-lg py-3">
             {submitLabel}
           </Button>
         </form>

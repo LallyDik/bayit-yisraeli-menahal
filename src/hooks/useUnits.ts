@@ -51,6 +51,6 @@ export const useUnits = () => {
     isLoading,
     createUnit: create.mutate,
     updateUnit: update.mutate,
-    archiveUnit: archive.mutate,
+    archiveUnit: archive.mutateAsync,
   };
 };

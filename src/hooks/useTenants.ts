@@ -55,6 +55,6 @@ export const useTenants = () => {
     // regardless of whether the caller awaits.
     createTenant: create.mutateAsync,
     updateTenant: update.mutateAsync,
-    archiveTenant: archive.mutate,
+    archiveTenant: archive.mutateAsync,
   };
 };

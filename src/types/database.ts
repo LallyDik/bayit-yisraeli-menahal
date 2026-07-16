@@ -65,6 +65,216 @@ export type Database = {
           },
         ]
       }
+      billing_schedule_occurrences: {
+        Row: {
+          calendar_label: string
+          created_at: string
+          due_date: string
+          id: string
+          owner_id: string
+          period_key: string
+          sequence_no: number
+          tenancy_id: string
+        }
+        Insert: {
+          calendar_label: string
+          created_at?: string
+          due_date: string
+          id?: string
+          owner_id?: string
+          period_key: string
+          sequence_no: number
+          tenancy_id: string
+        }
+        Update: {
+          calendar_label?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          owner_id?: string
+          period_key?: string
+          sequence_no?: number
+          tenancy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_schedule_occurrences_tenancy_owner_fkey"
+            columns: ["tenancy_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tenancies"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      charges: {
+        Row: {
+          amount_due: number
+          created_at: string
+          due_date: string
+          id: string
+          label: string
+          meter_current: number | null
+          meter_previous: number | null
+          meter_rate: number | null
+          note: string | null
+          owner_id: string
+          payment_type: string
+          period_key: string
+          tenancy_id: string
+        }
+        Insert: {
+          amount_due: number
+          created_at?: string
+          due_date: string
+          id?: string
+          label: string
+          meter_current?: number | null
+          meter_previous?: number | null
+          meter_rate?: number | null
+          note?: string | null
+          owner_id?: string
+          payment_type?: string
+          period_key: string
+          tenancy_id: string
+        }
+        Update: {
+          amount_due?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          label?: string
+          meter_current?: number | null
+          meter_previous?: number | null
+          meter_rate?: number | null
+          note?: string | null
+          owner_id?: string
+          payment_type?: string
+          period_key?: string
+          tenancy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charges_tenancy_id_owner_id_fkey"
+            columns: ["tenancy_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tenancies"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      meter_readings: {
+        Row: {
+          id: string
+          owner_id: string
+          unit_id: string
+          meter_kind: string
+          reading_date: string
+          value: number
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id?: string
+          unit_id: string
+          meter_kind: string
+          reading_date?: string
+          value: number
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          unit_id?: string
+          meter_kind?: string
+          reading_date?: string
+          value?: number
+          note?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      payment_allocations: {
+        Row: {
+          amount: number
+          charge_id: string
+          created_at: string
+          id: string
+          owner_id: string
+          payment_id: string
+        }
+        Insert: {
+          amount: number
+          charge_id: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          charge_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_charge_id_owner_id_fkey"
+            columns: ["charge_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "charges"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_payment_id_owner_id_fkey"
+            columns: ["payment_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          owner_id: string
+          paid_at: string
+          tenancy_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          owner_id?: string
+          paid_at?: string
+          tenancy_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          owner_id?: string
+          paid_at?: string
+          tenancy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_tenancy_id_owner_id_fkey"
+            columns: ["tenancy_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tenancies"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       tenancies: {
         Row: {
           created_at: string
@@ -109,6 +319,100 @@ export type Database = {
             columns: ["unit_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      tenancy_billing_settings: {
+        Row: {
+          calendar_type: string
+          created_at: string
+          due_day: number
+          owner_id: string
+          schedule_start_date: string
+          tenancy_id: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_type?: string
+          created_at?: string
+          due_day?: number
+          owner_id?: string
+          schedule_start_date?: string
+          tenancy_id: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_type?: string
+          created_at?: string
+          due_day?: number
+          owner_id?: string
+          schedule_start_date?: string
+          tenancy_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenancy_billing_settings_tenancy_owner_fkey"
+            columns: ["tenancy_id", "owner_id"]
+            isOneToOne: true
+            referencedRelation: "tenancies"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      tenancy_payment_terms: {
+        Row: {
+          archived_at: string | null
+          calculation_type: string
+          created_at: string
+          fixed_amount: number | null
+          frequency_months: number
+          id: string
+          label: string
+          owner_id: string
+          payment_type: string
+          starts_on_sequence: number
+          tenancy_id: string
+          unit_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          calculation_type?: string
+          created_at?: string
+          fixed_amount?: number | null
+          frequency_months?: number
+          id?: string
+          label: string
+          owner_id?: string
+          payment_type: string
+          starts_on_sequence?: number
+          tenancy_id: string
+          unit_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          calculation_type?: string
+          created_at?: string
+          fixed_amount?: number | null
+          frequency_months?: number
+          id?: string
+          label?: string
+          owner_id?: string
+          payment_type?: string
+          starts_on_sequence?: number
+          tenancy_id?: string
+          unit_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenancy_payment_terms_tenancy_owner_fkey"
+            columns: ["tenancy_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tenancies"
             referencedColumns: ["id", "owner_id"]
           },
         ]
@@ -205,7 +509,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_added_payment_term: {
+        Args: {
+          p_term_id: string
+        }
+        Returns: undefined
+      }
+      materialize_due_charges: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      save_tenancy_billing_schedule: {
+        Args: {
+          p_calendar_type: string
+          p_due_day: number
+          p_occurrences: Json
+          p_schedule_start_date: string
+          p_tenancy_id: string
+        }
+        Returns: undefined
+      }
+      set_charge_payment_state: {
+        Args: {
+          p_amount_due: number
+          p_charge_id: string
+          p_paid_amount: number
+          p_paid_at?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

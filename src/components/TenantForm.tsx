@@ -15,6 +15,7 @@ import type { Tenant, Unit } from '@/types';
 // and we need an explicit, selectable option for "this tenant has no unit"
 // (not just an unset/placeholder state).
 const NO_UNIT = 'none';
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 interface TenantFormProps {
   onSubmit: (values: {
@@ -25,12 +26,13 @@ interface TenantFormProps {
     notes: string | null;
     unit_id: string | null;
     monthly_rent: number | null;
+    start_date: string;
   }) => void;
   units: Unit[];
   // Units with a live tenancy right now (any tenant, not just this one) —
   // used to keep two tenants from being offered the same unit in the Select.
   occupiedUnitIds: Set<string>;
-  initialData?: Partial<Tenant> & { unit_id?: string | null; monthly_rent?: number | null };
+  initialData?: Partial<Tenant> & { unit_id?: string | null; monthly_rent?: number | null; start_date?: string };
   submitLabel?: string;
 }
 
@@ -50,6 +52,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
   const [rent, setRent] = useState(
     initialData.monthly_rent != null ? String(initialData.monthly_rent) : '',
   );
+  const [startDate, setStartDate] = useState(initialData.start_date ?? todayISO());
 
   // Free units, plus (when editing) this tenant's own currently-assigned
   // unit — so re-saving an unrelated field doesn't force them to move out.
@@ -78,13 +81,14 @@ export const TenantForm: React.FC<TenantFormProps> = ({
       notes: notes.trim() === '' ? null : notes.trim(),
       unit_id: hasUnit ? unitId : null,
       monthly_rent: hasUnit ? (rent === '' ? 0 : Number(rent)) : null,
+      start_date: startDate,
     });
   };
 
   return (
     <Card className="w-full max-w-2xl card-hover">
-      <CardHeader className="gradient-bg text-white">
-        <CardTitle className="flex items-center gap-2 text-xl">
+      <CardHeader className="bg-primary/20 text-foreground border-b-[3px] border-primary">
+        <CardTitle className="flex items-center gap-2 text-xl font-display">
           <Plus className="w-6 h-6" />
           {submitLabel}
         </CardTitle>
@@ -116,15 +120,30 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           {unitId !== NO_UNIT && (
-            <div className="space-y-2">
-              <Label htmlFor="tenant-rent" className="text-lg font-medium">שכר דירה חודשי (₪)</Label>
-              <Input
-                id="tenant-rent" type="number" min="0" value={rent} className="text-lg p-3 ltr"
-                onChange={(e) => setRent(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                מולא מברירת המחדל של היחידה. אפשר לשנות — מרגע זה הסכום שייך לשוכר הזה בלבד.
-              </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="tenant-rent" className="text-lg font-medium">שכר דירה חודשי (₪)</Label>
+                <Input
+                  id="tenant-rent" type="number" min="0" value={rent} className="text-lg p-3 ltr"
+                  onChange={(e) => setRent(e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  מולא מברירת המחדל של היחידה. אפשר לשנות.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tenant-start-date" className="text-lg font-medium">תאריך כניסה</Label>
+                <Input
+                  id="tenant-start-date"
+                  type="date"
+                  value={startDate}
+                  className="text-lg p-3 ltr"
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  תאריך התשלום מוגדר בנפרד במסך התשלומים.
+                </p>
+              </div>
             </div>
           )}
 
@@ -163,7 +182,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
 
           {initialData.id && <AttachmentsSection tenantId={initialData.id} />}
 
-          <Button type="submit" className="w-full text-lg py-3 gradient-bg hover:opacity-90">
+          <Button type="submit" className="w-full text-lg py-3">
             {submitLabel}
           </Button>
         </form>

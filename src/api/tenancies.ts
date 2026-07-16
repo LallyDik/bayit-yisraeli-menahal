@@ -30,7 +30,7 @@ export async function createTenancy(
 
 export async function endTenancy(id: string, endDate: string): Promise<void> {
   const { error } = await supabase
-    .from('tenancies').update({ end_date: endDate }).eq('id', id);
+    .from('tenancies').update({ end_date: endDate }).eq('id', id).is('end_date', null);
   if (error) throw error;
 }
 
