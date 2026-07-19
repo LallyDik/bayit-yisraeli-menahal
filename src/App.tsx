@@ -1,5 +1,6 @@
 
 import { DirectionProvider } from "@radix-ui/react-direction";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ const queryClient = new QueryClient();
 // Dropdown open on the wrong side, and arrow keys in Tabs move the wrong way.
 const App = () => (
   <DirectionProvider dir="rtl">
+    <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
@@ -31,6 +33,7 @@ const App = () => (
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
+    </HelmetProvider>
   </DirectionProvider>
 );
 
