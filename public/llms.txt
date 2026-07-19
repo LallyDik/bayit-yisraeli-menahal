@@ -1,0 +1,9 @@
+# ניהול שכירות
+
+> מערכת בעברית לניהול שכירות לבעלי דירות: מעקב שוכרים, יחידות ותשלומי שכר דירה, חשמל, מים וגז — לפי מונה או סכום קבוע, עם לוח שנה עברי.
+
+The app is a Hebrew-first rental management tool for small landlords. It tracks tenants, units, and monthly charges (rent, electricity, water, gas) using meter readings or fixed amounts, with a Hebrew calendar.
+
+## Pages
+
+- [דף הבית](/): Landing page describing the product with a sign-in form for landlords to access their dashboard.
