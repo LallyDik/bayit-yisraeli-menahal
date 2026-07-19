@@ -196,8 +196,6 @@ interface FirstLoginGuideProps {
 
 type TargetRect = Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left' | 'width' | 'height'>;
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-
 export function FirstLoginGuide({
   open,
   hasUnits,
@@ -209,7 +207,7 @@ export function FirstLoginGuide({
 }: FirstLoginGuideProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
-  const [coachmarkSize, setCoachmarkSize] = useState({ width: 380, height: 320 });
+  const [isLocatingTarget, setIsLocatingTarget] = useState(false);
   const coachmarkRef = useRef<HTMLDivElement>(null);
   const onNavigateRef = useRef(onNavigate);
   const step = STEPS[stepIndex];
@@ -232,10 +230,11 @@ export function FirstLoginGuide({
   useEffect(() => {
     if (!open || isIntro || !step.selectors) {
       setTargetRect(null);
+      setIsLocatingTarget(false);
       return undefined;
     }
 
-    setTargetRect(null);
+    setIsLocatingTarget(true);
     if (step.view) onNavigateRef.current(step.view);
     let cancelled = false;
     let retryTimer = 0;
@@ -247,17 +246,19 @@ export function FirstLoginGuide({
         .find((candidate) => candidate && candidate.getBoundingClientRect().width > 0);
       if (!element) {
         if (attempt < 12) retryTimer = window.setTimeout(() => syncTarget(attempt + 1), 80);
-        else setTargetRect(null);
+        else {
+          setTargetRect(null);
+          setIsLocatingTarget(false);
+        }
         return;
       }
 
       if (attempt === 0) {
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const isMobile = window.innerWidth < 640;
         element.scrollIntoView({
           block: isMobile ? 'start' : 'nearest',
           inline: 'nearest',
-          behavior: reducedMotion || isMobile ? 'auto' : 'smooth',
+          behavior: 'auto',
         });
         if (isMobile) window.scrollBy({ top: -76, behavior: 'auto' });
       }
@@ -267,6 +268,18 @@ export function FirstLoginGuide({
         if (rect.width > 0 && rect.height > 0) {
           if (element.dataset.guide === 'payments-page') setTargetRect(null);
           else setTargetRect({ top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width, height: rect.height });
+          setIsLocatingTarget(false);
+          return;
+        }
+        // The node can be swapped out from under us by the very tab switch this
+        // effect just triggered (and the payments view is lazy-loaded), leaving a
+        // detached 0x0 element. Retry — and always clear the locating flag, or the
+        // coachmark stays opacity-0 behind the backdrop and the guide looks frozen.
+        if (attempt < 12) {
+          retryTimer = window.setTimeout(() => syncTarget(attempt + 1), 80);
+        } else {
+          setTargetRect(null);
+          setIsLocatingTarget(false);
         }
       });
     };
@@ -274,23 +287,12 @@ export function FirstLoginGuide({
     retryTimer = window.setTimeout(() => syncTarget(), 100);
     const handleViewportChange = () => syncTarget(1);
     window.addEventListener('resize', handleViewportChange);
-    window.addEventListener('scroll', handleViewportChange, true);
     return () => {
       cancelled = true;
       window.clearTimeout(retryTimer);
       window.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('scroll', handleViewportChange, true);
     };
   }, [isIntro, open, step.selectors, step.view]);
-
-  useEffect(() => {
-    if (!open || isIntro || !coachmarkRef.current) return undefined;
-    const observer = new ResizeObserver(([entry]) => {
-      setCoachmarkSize({ width: entry.contentRect.width, height: entry.contentRect.height });
-    });
-    observer.observe(coachmarkRef.current);
-    return () => observer.disconnect();
-  }, [isIntro, open, stepIndex]);
 
   useEffect(() => {
     if (!open || isIntro) return undefined;
@@ -345,47 +347,40 @@ export function FirstLoginGuide({
   const coachmarkPosition = (() => {
     if (!targetRect || typeof window === 'undefined') return undefined;
     const gutter = 16;
-    const gap = 14;
     const width = Math.min(380, window.innerWidth - gutter * 2);
-    const measuredHeight = coachmarkSize.height || 320;
+    const placeAtBottom = targetRect.bottom <= window.innerHeight / 2;
     if (window.innerWidth < 640) {
-      const availableBelow = window.innerHeight - targetRect.bottom - gap - gutter;
-      const availableAbove = targetRect.top - gap - gutter;
-      const preferredHeight = Math.min(measuredHeight, window.innerHeight * 0.55);
-      const placeBelow = availableBelow >= Math.min(preferredHeight, 220) || availableBelow >= availableAbove;
-      const availableHeight = Math.max(placeBelow ? availableBelow : availableAbove, 96);
       return {
         right: 12,
         left: 12,
-        top: placeBelow
-          ? targetRect.bottom + gap
-          : Math.max(gutter, targetRect.top - gap - Math.min(preferredHeight, availableHeight)),
+        ...(placeAtBottom ? { bottom: 12 } : { top: 12 }),
         width: 'auto',
-        maxHeight: Math.min(preferredHeight, availableHeight),
+        maxHeight: '44dvh',
       };
     }
-    const availableBelow = window.innerHeight - targetRect.bottom - gap - gutter;
-    const availableAbove = targetRect.top - gap - gutter;
-    const placeBelow = availableBelow >= Math.min(measuredHeight, 240) || availableBelow >= availableAbove;
-    const availableHeight = Math.max(placeBelow ? availableBelow : availableAbove, 120);
-    const top = placeBelow
-      ? targetRect.bottom + gap
-      : Math.max(gutter, targetRect.top - gap - Math.min(measuredHeight, availableHeight));
-    const left = clamp(targetRect.left + targetRect.width / 2 - width / 2, gutter, window.innerWidth - width - gutter);
-    return { top, left, width, maxHeight: Math.min(measuredHeight, availableHeight) };
+    return {
+      left: '50%',
+      transform: 'translateX(-50%)',
+      ...(placeAtBottom ? { bottom: gutter } : { top: gutter }),
+      width,
+      maxHeight: '46dvh',
+    };
   })();
+
+  const visibleTargetRect = isLocatingTarget ? null : targetRect;
+  const hideCoachmarkWhileLocating = isLocatingTarget && !targetRect;
 
   const coachmark = open && !isIntro ? createPortal(
     <div className="fixed inset-0 z-[70]" aria-hidden={false}>
-      <div className={`absolute inset-0 ${targetRect ? '' : 'bg-foreground/65'}`} aria-hidden="true" />
-      {targetRect && (
+      <div className={`absolute inset-0 ${visibleTargetRect ? '' : 'bg-foreground/65'}`} aria-hidden="true" />
+      {visibleTargetRect && (
         <div
           className="pointer-events-none fixed rounded-2xl ring-4 ring-secondary"
           style={{
-            top: targetRect.top - 7,
-            left: targetRect.left - 7,
-            width: targetRect.width + 14,
-            height: targetRect.height + 14,
+            top: visibleTargetRect.top - 7,
+            left: visibleTargetRect.left - 7,
+            width: visibleTargetRect.width + 14,
+            height: visibleTargetRect.height + 14,
             boxShadow: '0 0 0 9999px rgba(23, 50, 77, 0.66)',
           }}
           aria-hidden="true"
@@ -399,7 +394,7 @@ export function FirstLoginGuide({
         aria-labelledby="guide-step-title"
         aria-describedby="guide-step-description"
         tabIndex={-1}
-        className={`fixed max-h-[55dvh] overflow-y-auto rounded-[1.75rem] border bg-card p-5 text-start shadow-2xl outline-none sm:max-h-[calc(100dvh-2rem)] ${coachmarkPosition ? '' : 'left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2'}`}
+        className={`fixed max-h-[55dvh] overflow-y-auto rounded-[1.75rem] border bg-card p-5 text-start shadow-2xl outline-none sm:max-h-[calc(100dvh-2rem)] ${hideCoachmarkWhileLocating ? 'pointer-events-none opacity-0' : ''} ${coachmarkPosition ? '' : 'left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2'}`}
         style={coachmarkPosition}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
