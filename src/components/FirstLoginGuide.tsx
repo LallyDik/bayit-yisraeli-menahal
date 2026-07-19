@@ -367,8 +367,10 @@ export function FirstLoginGuide({
     };
   })();
 
+  // The spotlight waits until the target is measured, but the panel itself must
+  // never be hidden: hiding it meant any hiccup while locating left the user
+  // staring at the dark backdrop with nothing to read and nothing to click.
   const visibleTargetRect = isLocatingTarget ? null : targetRect;
-  const hideCoachmarkWhileLocating = isLocatingTarget && !targetRect;
 
   const coachmark = open && !isIntro ? createPortal(
     <div className="fixed inset-0 z-[70]" aria-hidden={false}>
@@ -394,7 +396,7 @@ export function FirstLoginGuide({
         aria-labelledby="guide-step-title"
         aria-describedby="guide-step-description"
         tabIndex={-1}
-        className={`fixed max-h-[55dvh] overflow-y-auto rounded-[1.75rem] border bg-card p-5 text-start shadow-2xl outline-none sm:max-h-[calc(100dvh-2rem)] ${hideCoachmarkWhileLocating ? 'pointer-events-none opacity-0' : ''} ${coachmarkPosition ? '' : 'left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2'}`}
+        className={`fixed max-h-[55dvh] overflow-y-auto rounded-[1.75rem] border bg-card p-5 text-start shadow-2xl outline-none sm:max-h-[calc(100dvh-2rem)] ${coachmarkPosition ? '' : 'left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2'}`}
         style={coachmarkPosition}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
