@@ -491,7 +491,7 @@ const Index = () => {
       <Helmet>
         <link rel="canonical" href="https://nihul-schhirut.lovable.app/" />
         <meta property="og:url" content="https://nihul-schhirut.lovable.app/" />
-        <title>{`${TAB_TITLES[activeTab]} · ניהול שכירות`}</title>
+        <title>{`${TAB_TITLES[tab]} · ניהול שכירות`}</title>
       </Helmet>
       <header className="relative overflow-hidden rounded-b-[2.5rem] bg-primary/20 px-5 pb-20 pt-8 text-foreground sm:rounded-b-[4rem] sm:px-6">
         <div className="absolute -left-12 -top-16 h-48 w-48 rounded-full bg-primary/55" aria-hidden="true" />
