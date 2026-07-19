@@ -105,14 +105,25 @@ export const useBilling = () => {
   }, [occurrencesByTenancyId]);
 
   const currentRentByTenancyId = useMemo(() => {
+    // Rent must be matched to the *current* billing period, the way term
+    // charges already are. Simply taking the newest rent charge meant that at
+    // the start of a new month last month's payment kept showing as if it
+    // belonged to the new one — the card read "מועד נוכחי: <this month>" while
+    // displaying the previous month's paid/owed amounts.
     const map = new Map<string, ChargeWithPaid>();
-    charges
-      .filter((charge) => charge.payment_type === 'rent')
-      .forEach((charge) => {
-        if (!map.has(charge.tenancy_id)) map.set(charge.tenancy_id, charge);
-      });
+    const rentCharges = charges.filter((charge) => charge.payment_type === 'rent');
+    const legacyKey = currentRentPeriod().periodKey; // pre-schedule `rent:YYYY-MM`
+    new Set(rentCharges.map((charge) => charge.tenancy_id)).forEach((tenancyId) => {
+      const occurrence = currentOccurrenceByTenancyId.get(tenancyId);
+      const periodKeys = new Set([legacyKey]);
+      if (occurrence) periodKeys.add(`rent:${occurrence.period_key}`);
+      const match = rentCharges.find((charge) => (
+        charge.tenancy_id === tenancyId && periodKeys.has(charge.period_key)
+      ));
+      if (match) map.set(tenancyId, match);
+    });
     return map;
-  }, [charges]);
+  }, [charges, currentOccurrenceByTenancyId]);
 
   const scheduledPeriod = useCallback((tenancyId: string, frequencyMonths: 1 | 2 = 1, startsOnSequence = 1) => {
     const today = localDateISO();
