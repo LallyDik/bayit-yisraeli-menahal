@@ -88,6 +88,15 @@ Deno.serve(async (req) => {
   );
 
   // 2) Which charges are due but unpaid?
+  // The anon key is public, so JWT verification alone would let anyone trigger a
+  // reminder blast. Require a shared secret that only the scheduler knows.
+  const { data: secretRow } = await supabase
+    .from('private_settings').select('value').eq('key', 'reminder_secret').maybeSingle();
+  const expectedSecret = secretRow?.value;
+  if (expectedSecret && req.headers.get('x-reminder-secret') !== expectedSecret) {
+    return json({ error: 'forbidden' }, 403);
+  }
+
   let query = supabase.from('v_outstanding_charges').select('*').order('due_date');
   if (onlyOwner) query = query.eq('owner_id', onlyOwner);
   const { data, error } = await query;
