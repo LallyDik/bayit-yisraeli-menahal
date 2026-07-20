@@ -1,5 +1,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+// nodemailer, not denomailer: denomailer emits RFC-invalid MIME for Hebrew —
+// literal spaces inside RFC 2047 encoded-words (which terminate the encoded
+// word, so Gmail shows the raw subject) and lowercase quoted-printable hex.
+import nodemailer from 'npm:nodemailer@6.9.14';
 import { shabbatQuietWindow } from './shabbat.ts';
 
 type Row = {
@@ -101,12 +104,12 @@ Deno.serve(async (req) => {
   }
 
   const results: unknown[] = [];
-  let client: SMTPClient | null = null;
-  if (!dryRun) {
-    client = new SMTPClient({
-      connection: { hostname: 'smtp.gmail.com', port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } },
-    });
-  }
+  const transporter = dryRun ? null : nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user: gmailUser, pass: gmailPass },
+  });
 
   try {
     for (const [ownerId, ownerRows] of byOwner) {
@@ -124,13 +127,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      await client!.send({ from: `ניהול שכירות <${gmailUser}>`, to, subject, html, contentType: 'text/html' });
+      await transporter!.sendMail({
+        from: `"ניהול שכירות" <${gmailUser}>`,
+        to,
+        subject,
+        html,
+      });
       results.push({ ownerId, to, sent: true, charges: ownerRows.length, total });
     }
   } catch (e) {
     return json({ error: String(e), partial: results }, 500);
   } finally {
-    if (client) await client.close();
+    transporter?.close?.();
   }
 
   return json({
