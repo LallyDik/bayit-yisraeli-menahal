@@ -1,0 +1,142 @@
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+import { shabbatQuietWindow } from './shabbat.ts';
+
+type Row = {
+  owner_id: string;
+  charge_id: string;
+  label: string;
+  due_date: string;
+  amount_due: number;
+  paid_amount: number;
+  remaining: number;
+  unit_name: string;
+  tenant_name: string;
+};
+
+const APP_URL = 'https://nihul-schhirut.lovable.app/';
+const shekel = (n: number) => `₪${Number(n).toLocaleString('he-IL', { maximumFractionDigits: 2 })}`;
+const heDate = (iso: string) => new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
+  .format(new Date(`${iso}T12:00:00`));
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body, null, 2), { status, headers: { 'Content-Type': 'application/json' } });
+
+function buildEmail(rows: Row[]) {
+  const total = rows.reduce((sum, r) => sum + Number(r.remaining), 0);
+
+  // Group by tenant + unit so the landlord reads it the way they think about it.
+  const groups = new Map<string, Row[]>();
+  for (const row of rows) {
+    const key = `${row.tenant_name} · ${row.unit_name}`;
+    groups.set(key, [...(groups.get(key) ?? []), row]);
+  }
+
+  const blocks = Array.from(groups, ([who, items]) => {
+    const lines = items.map((r) => `
+      <tr>
+        <td style="padding:6px 0;color:#5B6E80;">${r.label} · ${heDate(r.due_date)}</td>
+        <td style="padding:6px 0;text-align:left;font-weight:600;white-space:nowrap;">${shekel(r.remaining)}</td>
+      </tr>`).join('');
+    return `
+      <div style="margin:0 0 18px;padding:14px 16px;background:#FFFCF5;border:1px solid #EAE1D0;border-radius:14px;">
+        <p style="margin:0 0 6px;font-weight:700;">${who}</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">${lines}</table>
+      </div>`;
+  }).join('');
+
+  const subject = `תזכורת: ${rows.length} חיובים ממתינים לעדכון (${shekel(total)})`;
+
+  const html = `
+  <div dir="rtl" style="font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#203D5A;max-width:600px;margin:0 auto;padding:24px;">
+    <p style="margin:0 0 4px;font-weight:700;color:#0E5F5D;">ניהול שכירות</p>
+    <h1 style="margin:0 0 6px;font-size:24px;">יש חיובים שעדיין לא עודכנו</h1>
+    <p style="margin:0 0 20px;color:#5B6E80;font-size:15px;">
+      אלה חיובים שהגיע מועדם ועדיין לא סומנו כשולמו. אם כבר קיבלת את הכסף — שווה לעדכן כדי שהמעקב יישאר מדויק.
+    </p>
+    ${blocks}
+    <p style="margin:18px 0 22px;font-size:16px;">סה״כ ממתין: <strong>${shekel(total)}</strong></p>
+    <a href="${APP_URL}" style="display:inline-block;background:#1E9E9B;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:700;">
+      פתחו את המערכת לעדכון
+    </a>
+    <p style="margin:26px 0 0;color:#8A9AA8;font-size:12px;">
+      נשלח אוטומטית ממערכת ניהול השכירות. תזכורות אינן נשלחות בשבת ובחגים.
+    </p>
+  </div>`;
+
+  return { subject, html, total };
+}
+
+Deno.serve(async (req) => {
+  const url = new URL(req.url);
+  const dryRun = url.searchParams.get('dry') === '1';
+  const onlyOwner = url.searchParams.get('owner');
+  const force = url.searchParams.get('force') === '1';
+
+  // 1) Never send on Shabbat or Yom Tov.
+  const quiet = shabbatQuietWindow(new Date());
+  if (quiet.quiet && !force) {
+    return json({ skipped: true, reason: quiet.reason, until: quiet.until, sent: 0 });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+
+  // 2) Which charges are due but unpaid?
+  let query = supabase.from('v_outstanding_charges').select('*').order('due_date');
+  if (onlyOwner) query = query.eq('owner_id', onlyOwner);
+  const { data, error } = await query;
+  if (error) return json({ error: error.message }, 500);
+
+  const rows = (data ?? []) as Row[];
+  const byOwner = new Map<string, Row[]>();
+  for (const row of rows) byOwner.set(row.owner_id, [...(byOwner.get(row.owner_id) ?? []), row]);
+
+  const gmailUser = Deno.env.get('GMAIL_USER');
+  const gmailPass = Deno.env.get('GMAIL_APP_PASSWORD');
+  if (!gmailUser || !gmailPass) {
+    return json({ error: 'GMAIL_USER / GMAIL_APP_PASSWORD secrets are not set' }, 500);
+  }
+
+  const results: unknown[] = [];
+  let client: SMTPClient | null = null;
+  if (!dryRun) {
+    client = new SMTPClient({
+      connection: { hostname: 'smtp.gmail.com', port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } },
+    });
+  }
+
+  try {
+    for (const [ownerId, ownerRows] of byOwner) {
+      const { data: found } = await supabase.auth.admin.getUserById(ownerId);
+      const to = found?.user?.email;
+      // Seeded test accounts would only generate bounces.
+      if (!to || to.endsWith('@example.com')) {
+        results.push({ ownerId, to: to ?? null, sent: false, reason: 'no deliverable address' });
+        continue;
+      }
+
+      const { subject, html, total } = buildEmail(ownerRows);
+      if (dryRun) {
+        results.push({ ownerId, to, sent: false, dryRun: true, charges: ownerRows.length, total, subject });
+        continue;
+      }
+
+      await client!.send({ from: `ניהול שכירות <${gmailUser}>`, to, subject, html, contentType: 'text/html' });
+      results.push({ ownerId, to, sent: true, charges: ownerRows.length, total });
+    }
+  } catch (e) {
+    return json({ error: String(e), partial: results }, 500);
+  } finally {
+    if (client) await client.close();
+  }
+
+  return json({
+    skipped: false,
+    quietWindow: quiet.quiet ? { forcedThrough: true, reason: quiet.reason } : null,
+    owners: byOwner.size,
+    results,
+  });
+});

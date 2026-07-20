@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HebrewCalendar, Location, flags } from '@hebcal/core';
-import { maySendReminder, shabbatQuietWindow } from '../supabase/functions/_shared/shabbat';
+import { maySendReminder, shabbatQuietWindow } from '../supabase/functions/send-payment-reminders/shabbat';
 
 // Jerusalem is UTC+3 in July (IDT), so 09:00Z == 12:00 local.
 const jul = (utc: string) => new Date(utc);
