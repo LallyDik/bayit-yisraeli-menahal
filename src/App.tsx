@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
+import { PaidConfirmation } from "@/components/PaidConfirmation";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,9 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            {/* Outside Routes: a reminder link lands on "/" whether or not the
+                recipient happens to be signed in. */}
+            <PaidConfirmation />
             <Routes>
               <Route path="/" element={<Index />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
