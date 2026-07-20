@@ -87,6 +87,15 @@ export const TenantForm: React.FC<TenantFormProps> = ({
       setError('יש לבחור תאריך כניסה ליחידה.');
       return;
     }
+    // A date field accepts a four-digit year, so a slip on the keyboard can save
+    // something like the year 0485 — which then drives the whole billing schedule.
+    if (hasUnit && startDate) {
+      const year = Number(startDate.slice(0, 4));
+      if (!Number.isFinite(year) || year < 1990 || year > 2100) {
+        setError('תאריך הכניסה אינו נראה תקין. יש לבחור תאריך אמיתי.');
+        return;
+      }
+    }
     setError(null);
     onSubmit({
       name: name.trim(),
@@ -156,6 +165,8 @@ export const TenantForm: React.FC<TenantFormProps> = ({
                   value={startDate}
                   className="text-lg p-3 ltr"
                   required
+                  min="1990-01-01"
+                  max="2100-12-31"
                   onChange={(e) => setStartDate(e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">

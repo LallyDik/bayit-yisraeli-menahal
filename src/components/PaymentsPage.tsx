@@ -29,6 +29,7 @@ import {
   Flame,
   Gauge,
   History,
+  PencilLine,
   Plus,
   ReceiptText,
   Settings,
@@ -390,6 +391,8 @@ interface PaymentsPageProps {
   onClearFocus: () => void;
   onAddTenant: () => void;
   onMarkRentPaid: (tenancy: TenancyWithNames) => Promise<void>;
+  /** Opens the tenancy for editing — the only place the monthly rent can be set. */
+  onEditTenancy: (tenancy: TenancyWithNames) => void;
   onSaveRentPayment: (input: { tenancy: TenancyWithNames; amountDue: number; paidAmount: number; paidAt: string }) => Promise<void>;
   onSaveUtilityCharge: UtilityCardProps['onCalculate'];
   onMarkChargePaid: (charge: ChargeWithPaid) => Promise<void>;
@@ -459,6 +462,7 @@ export function PaymentsPage({
   onClearFocus,
   onAddTenant,
   onMarkRentPaid,
+  onEditTenancy,
   onSaveRentPayment,
   onSaveUtilityCharge,
   onMarkChargePaid,
@@ -674,13 +678,29 @@ export function PaymentsPage({
                   <PaidMeter paid={rentPaid} due={rentDue} />
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2" data-guide="rent-payment-actions">
-                  <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => { void onMarkRentPaid(tenancy).catch(() => undefined); }} disabled={rentDue <= rentPaid || pendingKeys.has(tenancy.id)} data-guide="rent-mark-paid">
-                    <CheckCircle className="h-4 w-4" />
-                    {pendingKeys.has(tenancy.id) ? 'שומר...' : 'סמן כשולם'}
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => setEditingRent(tenancy)} disabled={pendingKeys.has(tenancy.id)} data-guide="rent-partial">
-                    תשלום חלקי
-                  </Button>
+                  {rentDue <= 0 ? (
+                    // Without a rent amount every payment action is a no-op
+                    // (0 <= 0 disables "mark paid", and the hook returns early),
+                    // so say why and point at the one screen that can fix it
+                    // instead of leaving a dead button with no explanation.
+                    <div className="w-full rounded-xl bg-muted/60 p-3">
+                      <p className="text-sm text-muted-foreground">עדיין לא הוגדר שכר דירה לשכירות הזו, ולכן אי אפשר לרשום תשלום.</p>
+                      <Button size="sm" className="mt-3 h-11 rounded-full sm:h-9" onClick={() => onEditTenancy(tenancy)}>
+                        <PencilLine className="h-4 w-4" />
+                        הגדירו שכר דירה
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => { void onMarkRentPaid(tenancy).catch(() => undefined); }} disabled={rentDue <= rentPaid || pendingKeys.has(tenancy.id)} data-guide="rent-mark-paid">
+                        <CheckCircle className="h-4 w-4" />
+                        {pendingKeys.has(tenancy.id) ? 'שומר...' : 'סמן כשולם'}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => setEditingRent(tenancy)} disabled={pendingKeys.has(tenancy.id)} data-guide="rent-partial">
+                        תשלום חלקי
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 

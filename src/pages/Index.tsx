@@ -577,6 +577,10 @@ const Index = () => {
                   onClearFocus={clearPaymentFocus}
                   onAddTenant={() => { setTab('tenants'); setAddingTenant(true); }}
                   onMarkRentPaid={markCurrentRentPaid}
+                  onEditTenancy={(tenancy) => {
+                    setTab('tenants');
+                    setEditingTenant(tenants.find((tenant) => tenant.id === tenancy.tenant_id) ?? null);
+                  }}
                   onSaveRentPayment={saveCurrentRentPayment}
                   onSaveUtilityCharge={saveUtilityCharge}
                   onMarkChargePaid={markChargePaid}
