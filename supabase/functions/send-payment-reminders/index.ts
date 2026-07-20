@@ -15,9 +15,13 @@ type Row = {
   remaining: number;
   unit_name: string;
   tenant_name: string;
+  /** Single-use token backing this row's "mark paid" link. */
+  token?: string;
 };
 
 const APP_URL = 'https://nihul-schhirut.lovable.app/';
+const MARK_PAID_URL = 'https://lwmddgwwfirkcaqaxdbh.supabase.co/functions/v1/mark-charge-paid';
+const TOKEN_TTL_DAYS = 14;
 const shekel = (n: number) => `₪${Number(n).toLocaleString('he-IL', { maximumFractionDigits: 2 })}`;
 const heDate = (iso: string) => new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
   .format(new Date(`${iso}T12:00:00`));
@@ -38,8 +42,11 @@ function buildEmail(rows: Row[]) {
   const blocks = Array.from(groups, ([who, items]) => {
     const lines = items.map((r) => `
       <tr>
-        <td style="padding:6px 0;color:#5B6E80;">${r.label} · ${heDate(r.due_date)}</td>
-        <td style="padding:6px 0;text-align:left;font-weight:600;white-space:nowrap;">${shekel(r.remaining)}</td>
+        <td style="padding:8px 0;color:#5B6E80;">${r.label} · ${heDate(r.due_date)}</td>
+        <td style="padding:8px 8px;text-align:left;font-weight:600;white-space:nowrap;">${shekel(r.remaining)}</td>
+        <td style="padding:8px 0;text-align:left;white-space:nowrap;">${r.token
+          ? `<a href="${MARK_PAID_URL}?token=${r.token}" style="display:inline-block;background:#1E9E9B;color:#fff;text-decoration:none;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700;">סמן כשולם</a>`
+          : ''}</td>
       </tr>`).join('');
     return `
       <div style="margin:0 0 18px;padding:14px 16px;background:#FFFCF5;border:1px solid #EAE1D0;border-radius:14px;">
@@ -130,7 +137,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const { subject, html, total } = buildEmail(ownerRows);
+      // A fresh single-use token per charge, so each "mark paid" link works once
+      // and stops working after two weeks even if the mail is forwarded.
+      const expiresAt = new Date(Date.now() + TOKEN_TTL_DAYS * 86_400_000).toISOString();
+      const rowsWithTokens: Row[] = [];
+      for (const row of ownerRows) {
+        const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '');
+        const { error: tokenError } = await supabase.from('payment_action_tokens')
+          .insert({ token, charge_id: row.charge_id, owner_id: ownerId, expires_at: expiresAt });
+        rowsWithTokens.push(tokenError ? row : { ...row, token });
+      }
+
+      const { subject, html, total } = buildEmail(rowsWithTokens);
       if (dryRun) {
         results.push({ ownerId, to, sent: false, dryRun: true, charges: ownerRows.length, total, subject });
         continue;
