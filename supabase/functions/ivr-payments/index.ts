@@ -2,20 +2,22 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { play, playAndHangup, read, say, num, sanitize } from './yemot.ts';
 import { shabbatQuietWindow } from './shabbat.ts';
 
-// The phone menu. The landlord calls the Yemot number, hears each charge that
-// is due but unpaid, and presses:
-//   1 — mark it paid
-//   2 — send the tenant a voice reminder
-//   3 — skip to the next one
+// The phone management hub. The landlord calls the Yemot number and reaches a
+// main menu:
+//   1 — go through every open charge (not just overdue ones), and per charge:
+//         1 mark paid · 2 voice-remind the tenant · 3 next · 9 back to menu
+//   2 — hear a spoken summary of the month
 //   9 — finish
 //
-// Yemot drives this: it calls us once per step, so each request must rebuild
-// its own context. The charge list is frozen in ivr_call_state at call start,
-// because marking one paid drops it out of v_outstanding_charges and would
-// otherwise renumber everything still ahead of the caller.
+// Yemot drives this one step at a time, so each request rebuilds its context
+// from ivr_call_state. Two things are frozen there: the charge list (marking
+// one paid removes it from the open set, which would renumber everything still
+// ahead of the caller), and a single step counter that names each keypad
+// prompt — so a value from an earlier stage is never mistaken for a later one.
 
 const SEND_TTS_URL = 'https://www.call2all.co.il/ym/api/SendTTS';
-const DIGITS = ['1', '2', '3', '9'];
+const CHARGE_DIGITS = ['1', '2', '3', '9'];
+const MENU_DIGITS = ['1', '2', '9'];
 
 const reply = (body: string) =>
   new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
@@ -58,6 +60,29 @@ async function sendTenantReminder(phone: string, message: string): Promise<'sent
   }
 }
 
+type Client = ReturnType<typeof createClient>;
+type State = {
+  call_id: string;
+  owner_id: string;
+  stage: 'menu' | 'charges';
+  charge_ids: string[];
+  position: number;
+  marked: number;
+  reminded: number;
+  step: number;
+};
+
+const save = (supabase: Client, state: State) =>
+  supabase.from('ivr_call_state').update({
+    stage: state.stage,
+    charge_ids: state.charge_ids,
+    position: state.position,
+    marked: state.marked,
+    reminded: state.reminded,
+    step: state.step,
+    updated_at: new Date().toISOString(),
+  }).eq('call_id', state.call_id);
+
 Deno.serve(async (req) => {
   const params = await readParams(req);
   const supabase = createClient(
@@ -85,7 +110,7 @@ Deno.serve(async (req) => {
   const { data: existing } = await supabase
     .from('ivr_call_state').select('*').eq('call_id', callId).maybeSingle();
 
-  // ---- First step of a new call: authorise, load the queue, greet. ----
+  // ---- First step of a new call: authorise, greet with a snapshot, menu. ----
   if (!existing) {
     const caller = phoneKey(params.get('ApiPhone') ?? '');
     const { data: allowed } = await supabase
@@ -98,64 +123,81 @@ Deno.serve(async (req) => {
       ));
     }
 
-    const { data: charges } = await supabase
-      .from('v_outstanding_charges')
-      .select('charge_id, remaining')
-      .eq('owner_id', match.owner_id)
-      .order('due_date');
-
-    if (!charges?.length) {
-      return reply(playAndHangup(
-        say('אין חיובים שממתינים לעדכון'),
-        say('הכל מעודכן'),
-        say('שלום'),
-      ));
-    }
-
-    const total = charges.reduce((sum, c) => sum + Number(c.remaining), 0);
-    await supabase.from('ivr_call_state').insert({
-      call_id: callId,
-      owner_id: match.owner_id,
-      charge_ids: charges.map((c) => c.charge_id),
-      position: 0,
-    });
+    const summary = await monthSummary(supabase, match.owner_id);
+    const state: State = {
+      call_id: callId, owner_id: match.owner_id, stage: 'menu',
+      charge_ids: [], position: 0, marked: 0, reminded: 0, step: 0,
+    };
+    await supabase.from('ivr_call_state').insert(state);
     // Opportunistic cleanup of calls that never sent a hangup ping.
     await supabase.from('ivr_call_state')
       .delete().lt('created_at', new Date(Date.now() - 86_400_000).toISOString());
 
-    // Hebrew needs the singular form; "יש 1 חיובים" sounds broken read aloud.
-    const intro = charges.length === 1
-      ? [say('שלום'), say('יש חיוב אחד שממתין לעדכון')]
-      : [
-          say('שלום'),
-          say('יש'),
-          num(charges.length),
-          say('חיובים שממתינים לעדכון'),
-          say('בסך הכל'),
-          num(total),
-          say('שקלים'),
-        ];
-    return reply(await presentCharge(supabase, {
-      call_id: callId, owner_id: match.owner_id,
-      charge_ids: charges.map((c) => c.charge_id), position: 0, marked: 0, reminded: 0,
-    }, intro));
+    return reply(mainMenu(state, greetingParts(summary)));
   }
 
-  // ---- Subsequent steps: act on the keypress, then move on. ----
   const state = existing as State;
-  const pressed = params.get(`k${state.position}`);
+  const pressed = params.get(`s${state.step}`);
   if (!pressed) {
-    // No value yet (first delivery of this step, or a timeout) — ask again.
-    return reply(await presentCharge(supabase, state, []));
+    // No value yet (first delivery of this step, or a timeout) — ask again,
+    // at the same step so the prompt and the awaited value stay in sync.
+    return reply(await renderCurrent(supabase, state));
+  }
+
+  return reply(state.stage === 'menu'
+    ? await handleMenu(supabase, state, pressed)
+    : await handleCharge(supabase, state, pressed));
+});
+
+// ---- Main menu ----
+
+async function handleMenu(supabase: Client, state: State, pressed: string): Promise<string> {
+  if (pressed === '9') {
+    await supabase.from('ivr_call_state').delete().eq('call_id', state.call_id);
+    return farewell(state);
+  }
+
+  if (pressed === '2') {
+    const summary = await monthSummary(supabase, state.owner_id);
+    state.step += 1;
+    await save(supabase, state);
+    return mainMenu(state, summaryParts(summary));
+  }
+
+  if (pressed === '1') {
+    const { data } = await supabase.rpc('ivr_open_charges', { p_owner: state.owner_id });
+    const charges = (data ?? []) as { charge_id: string }[];
+    if (!charges.length) {
+      state.step += 1;
+      await save(supabase, state);
+      return mainMenu(state, [say('אין חיובים פתוחים לעדכון')]);
+    }
+    state.stage = 'charges';
+    state.charge_ids = charges.map((c) => c.charge_id);
+    state.position = 0;
+    state.step += 1;
+    await save(supabase, state);
+    return await presentCharge(supabase, state, []);
+  }
+
+  return await renderCurrent(supabase, state);
+}
+
+// ---- Per-charge loop ----
+
+async function handleCharge(supabase: Client, state: State, pressed: string): Promise<string> {
+  if (pressed === '9') {
+    state.stage = 'menu';
+    state.step += 1;
+    await save(supabase, state);
+    return mainMenu(state, [say('חזרה לתפריט הראשי')]);
+  }
+  if (!['1', '2', '3'].includes(pressed)) {
+    return await renderCurrent(supabase, state);
   }
 
   const chargeId = state.charge_ids[state.position];
   const prefix: string[] = [];
-  let { marked, reminded } = state;
-
-  if (pressed === '9') {
-    return reply(farewell(state));
-  }
 
   if (pressed === '1') {
     const { data: result } = await supabase.rpc('mark_charge_paid_for_owner', {
@@ -163,7 +205,7 @@ Deno.serve(async (req) => {
     });
     const row = Array.isArray(result) ? result[0] : result;
     if (row?.status === 'ok') {
-      marked += 1;
+      state.marked += 1;
       prefix.push(say('סומן כשולם'));
     } else {
       prefix.push(say('לא הצלחנו לעדכן את החיוב הזה'));
@@ -175,8 +217,7 @@ Deno.serve(async (req) => {
       p_owner: state.owner_id, p_charge: chargeId,
     });
     const charge = Array.isArray(details) ? details[0] : details;
-    const quiet = shabbatQuietWindow(new Date());
-    if (quiet.quiet) {
+    if (shabbatQuietWindow(new Date()).quiet) {
       prefix.push(say('לא נשלחת תזכורת בשבת ובחג'));
     } else if (!charge?.tenant_phone) {
       prefix.push(say('לא רשום מספר טלפון לשוכר הזה'));
@@ -187,7 +228,7 @@ Deno.serve(async (req) => {
       );
       const outcome = await sendTenantReminder(charge.tenant_phone, message);
       if (outcome === 'sent') {
-        reminded += 1;
+        state.reminded += 1;
         prefix.push(say('התזכורת נשלחה לשוכר'));
       } else if (outcome === 'no-token') {
         prefix.push(say('שליחת תזכורות עדיין לא מחוברת'));
@@ -197,75 +238,111 @@ Deno.serve(async (req) => {
     }
   }
 
-  const next = { ...state, position: state.position + 1, marked, reminded };
-  await supabase.from('ivr_call_state')
-    .update({ position: next.position, marked, reminded, updated_at: new Date().toISOString() })
-    .eq('call_id', callId);
-
-  if (next.position >= state.charge_ids.length) {
-    return reply(farewell(next, prefix));
+  // '3' just advances. Move to the next charge, or back to the menu when done.
+  state.position += 1;
+  state.step += 1;
+  if (state.position >= state.charge_ids.length) {
+    state.stage = 'menu';
+    state.position = 0;
+    await save(supabase, state);
+    return mainMenu(state, [...prefix, say('עברת על כל החיובים הפתוחים')]);
   }
-  return reply(await presentCharge(supabase, next, prefix));
-});
+  await save(supabase, state);
+  return await presentCharge(supabase, state, prefix);
+}
 
-type State = {
-  call_id: string;
-  owner_id: string;
-  charge_ids: string[];
-  position: number;
-  marked: number;
-  reminded: number;
-};
+// ---- Renderers ----
 
-async function presentCharge(
-  supabase: ReturnType<typeof createClient>,
-  state: State,
-  prefix: string[],
-): Promise<string> {
-  const chargeId = state.charge_ids[state.position];
-  const { data } = await supabase.rpc('ivr_charge_details', {
-    p_owner: state.owner_id, p_charge: chargeId,
-  });
-  const charge = Array.isArray(data) ? data[0] : data;
-  if (!charge) {
-    // Deleted mid-call; skip rather than dead-end the caller.
-    return play(say('החיוב הזה אינו זמין'));
-  }
+/** Re-emit the current prompt without advancing — for a step re-delivered
+ *  without a keypress. */
+async function renderCurrent(supabase: Client, state: State): Promise<string> {
+  return state.stage === 'menu'
+    ? mainMenu(state, [])
+    : await presentCharge(supabase, state, []);
+}
 
-  return read(`k${state.position}`, DIGITS,
+function mainMenu(state: State, prefix: string[]): string {
+  return read(`s${state.step}`, MENU_DIGITS,
     ...prefix,
-    say('חיוב'),
-    num(state.position + 1),
-    say('מתוך'),
-    num(state.charge_ids.length),
-    say(charge.tenant_name),
-    say(charge.unit_name),
-    say(charge.charge_label),
-    num(charge.remaining),
-    say('שקלים'),
-    say('לסימון כשולם הקישו'),
-    num(1),
-    say('לשליחת תזכורת קולית לשוכר הקישו'),
-    num(2),
-    say('למעבר לחיוב הבא הקישו'),
-    num(3),
-    say('לסיום הקישו'),
-    num(9),
+    say('לעדכון החיובים הפתוחים הקישו'), num(1),
+    say('לשמיעת סקירת החודש הקישו'), num(2),
+    say('לסיום הקישו'), num(9),
   );
 }
 
-function farewell(state: State, prefix: string[] = []): string {
-  const parts = [...prefix, say('סיימנו')];
-  if (state.marked === 1) {
-    parts.push(say('סומן כשולם חיוב אחד'));
-  } else if (state.marked > 1) {
-    parts.push(say('סומנו כשולמו'), num(state.marked), say('חיובים'));
+async function presentCharge(supabase: Client, state: State, prefix: string[]): Promise<string> {
+  const { data } = await supabase.rpc('ivr_charge_details', {
+    p_owner: state.owner_id, p_charge: state.charge_ids[state.position],
+  });
+  const charge = Array.isArray(data) ? data[0] : data;
+  if (!charge) {
+    // Deleted mid-call; drop it and carry on rather than dead-end the caller.
+    return play(say('החיוב הזה אינו זמין'));
   }
-  if (state.reminded === 1) {
-    parts.push(say('נשלחה תזכורת אחת'));
-  } else if (state.reminded > 1) {
-    parts.push(say('נשלחו'), num(state.reminded), say('תזכורות'));
-  }
+
+  return read(`s${state.step}`, CHARGE_DIGITS,
+    ...prefix,
+    say('חיוב'), num(state.position + 1), say('מתוך'), num(state.charge_ids.length),
+    say(charge.tenant_name),
+    say(charge.unit_name),
+    say(charge.charge_label),
+    num(charge.remaining), say('שקלים'),
+    say('לסימון כשולם הקישו'), num(1),
+    say('לשליחת תזכורת קולית לשוכר הקישו'), num(2),
+    say('לחיוב הבא הקישו'), num(3),
+    say('לחזרה לתפריט הראשי הקישו'), num(9),
+  );
+}
+
+function farewell(state: State): string {
+  const parts = [say('סיימנו')];
+  if (state.marked === 1) parts.push(say('סומן כשולם חיוב אחד'));
+  else if (state.marked > 1) parts.push(say('סומנו כשולמו'), num(state.marked), say('חיובים'));
+  if (state.reminded === 1) parts.push(say('נשלחה תזכורת אחת'));
+  else if (state.reminded > 1) parts.push(say('נשלחו'), num(state.reminded), say('תזכורות'));
   parts.push(say('שלום'));
   return playAndHangup(...parts);
+}
+
+// ---- Summary ----
+
+type Summary = {
+  month_charges: number;
+  month_paid: number;
+  month_open: number;
+  month_outstanding: number;
+  total_open: number;
+  total_outstanding: number;
+};
+
+async function monthSummary(supabase: Client, ownerId: string): Promise<Summary> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase.rpc('ivr_month_summary', { p_owner: ownerId, p_ref: today });
+  const row = (Array.isArray(data) ? data[0] : data) ?? {};
+  return {
+    month_charges: Number(row.month_charges ?? 0),
+    month_paid: Number(row.month_paid ?? 0),
+    month_open: Number(row.month_open ?? 0),
+    month_outstanding: Number(row.month_outstanding ?? 0),
+    total_open: Number(row.total_open ?? 0),
+    total_outstanding: Number(row.total_outstanding ?? 0),
+  };
+}
+
+// "יש" reads correctly for one or many, sidestepping Hebrew number agreement.
+const openCount = (n: number) =>
+  n === 1 ? [say('חיוב אחד פתוח')] : [num(n), say('חיובים פתוחים')];
+
+function greetingParts(s: Summary): string[] {
+  if (s.total_open === 0) return [say('שלום'), say('אין חיובים פתוחים'), say('הכל מעודכן')];
+  return [say('שלום'), say('יש לך'), ...openCount(s.total_open), say('בסך'), num(s.total_outstanding), say('שקלים')];
+}
+
+function summaryParts(s: Summary): string[] {
+  if (s.total_open === 0) return [say('אין חיובים פתוחים'), say('הכל מעודכן')];
+  const parts = [say('החודש'), ...openCount(s.month_open)];
+  if (s.month_paid === 1) parts.push(say('שולם חיוב אחד'));
+  else if (s.month_paid > 1) parts.push(num(s.month_paid), say('חיובים שולמו'));
+  parts.push(say('סך הכל פתוח לתשלום'), num(s.total_outstanding), say('שקלים'));
+  return parts;
 }
