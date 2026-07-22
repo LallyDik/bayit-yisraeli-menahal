@@ -19,7 +19,7 @@ type Row = {
   token?: string;
 };
 
-const APP_URL = 'https://nihul-schhirut.lovable.app/';
+const APP_URL = 'https://nihulschirut.com/';
 const MARK_PAID_URL = 'https://lwmddgwwfirkcaqaxdbh.supabase.co/functions/v1/mark-charge-paid';
 const TOKEN_TTL_DAYS = 14;
 const shekel = (n: number) => `₪${Number(n).toLocaleString('he-IL', { maximumFractionDigits: 2 })}`;

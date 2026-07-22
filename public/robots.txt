@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://nihul-schhirut.lovable.app/sitemap.xml
+Sitemap: https://nihulschirut.com/sitemap.xml

@@ -13,7 +13,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 // the browser. Redirecting also lands the recipient in the app with the updated
 // figures already on screen.
 
-const APP_URL = 'https://nihul-schhirut.lovable.app/';
+const APP_URL = 'https://nihulschirut.com/';
 
 function redirect(status: string, extra: Record<string, unknown> = {}) {
   const url = new URL(APP_URL);
