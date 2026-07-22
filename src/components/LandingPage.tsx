@@ -1,6 +1,7 @@
 import { Users, WalletCards, Gauge, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Auth } from '@/components/Auth';
+import { SiteFooter } from '@/components/SiteFooter';
 
 const scrollTo = (id: string) => () => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -54,6 +55,9 @@ export const LandingPage = () => (
             <Button size="lg" className="rounded-full" onClick={scrollTo('login')}>התחילו עכשיו — בחינם</Button>
             <Button size="lg" variant="outline" className="rounded-full bg-white/70" onClick={scrollTo('features')}>איך זה עובד</Button>
           </div>
+          <p className="mx-auto mt-4 max-w-md text-sm text-foreground/60">
+            בשלב פיתוח ראשוני — השימוש חינם. פיצ'רים נוספים שייכנסו בהמשך יהיו בתשלום.
+          </p>
         </div>
       </section>
 
@@ -85,8 +89,6 @@ export const LandingPage = () => (
       </section>
     </main>
 
-    <footer className="border-t px-5 py-8 text-center text-sm text-muted-foreground">
-      <p>ניהול שכירות — מערכת לניהול נכסים, שוכרים ותשלומים לבעלי דירות.</p>
-    </footer>
+    <SiteFooter />
   </div>
 );

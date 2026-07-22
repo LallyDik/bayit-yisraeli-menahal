@@ -18,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LandingPage } from '@/components/LandingPage';
+import { SiteFooter } from '@/components/SiteFooter';
 import { useAuth } from '@/hooks/useAuth';
 import { Dashboard, type TenantPaymentPreview } from '@/components/Dashboard';
 import { TenantPaymentSummaryDialog } from '@/components/TenantPaymentSummaryDialog';
@@ -736,6 +737,8 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <SiteFooter />
 
       <TenantPaymentSummaryDialog
         open={selectedPaymentTenancy !== null}
