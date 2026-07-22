@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ArrowRight, Home } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
+import { absoluteUrl } from "@/config/site";
 
 const NotFound = () => {
   const location = useLocation();
@@ -20,10 +21,10 @@ const NotFound = () => {
       <title>עמוד לא נמצא | ניהול שכירות</title>
       <meta name="description" content="העמוד המבוקש לא נמצא במערכת ניהול השכירות. חזרו לעמוד הראשי כדי להמשיך." />
       <meta name="robots" content="noindex, follow" />
-      <link rel="canonical" href={`https://nihul-schhirut.lovable.app${location.pathname}`} />
+      <link rel="canonical" href={absoluteUrl(location.pathname)} />
       <meta property="og:title" content="עמוד לא נמצא | ניהול שכירות" />
       <meta property="og:description" content="העמוד המבוקש לא נמצא במערכת ניהול השכירות." />
-      <meta property="og:url" content={`https://nihul-schhirut.lovable.app${location.pathname}`} />
+      <meta property="og:url" content={absoluteUrl(location.pathname)} />
     </Helmet>
     <div className="flex min-h-screen items-center justify-center bg-background page-confetti px-5" dir="rtl">
       <div className="w-full max-w-lg rounded-[2rem] border bg-card p-8 text-center shadow-sm sm:p-12">

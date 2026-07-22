@@ -30,6 +30,7 @@ import { useTenants } from '@/hooks/useTenants';
 import { useTenancies } from '@/hooks/useTenancies';
 import { useBilling } from '@/hooks/useBilling';
 import { FirstLoginGuide } from '@/components/FirstLoginGuide';
+import { absoluteUrl } from '@/config/site';
 import { localDateISO } from '@/utils/date';
 import {
   CURRENT_ONBOARDING_VERSION,
@@ -489,8 +490,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background page-confetti">
       <Helmet>
-        <link rel="canonical" href="https://nihul-schhirut.lovable.app/" />
-        <meta property="og:url" content="https://nihul-schhirut.lovable.app/" />
+        <link rel="canonical" href={absoluteUrl('/')} />
+        <meta property="og:url" content={absoluteUrl('/')} />
         <title>{`${TAB_TITLES[tab]} · ניהול שכירות`}</title>
       </Helmet>
       <header className="relative overflow-hidden rounded-b-[2.5rem] bg-primary/20 px-5 pb-20 pt-8 text-foreground sm:rounded-b-[4rem] sm:px-6">
