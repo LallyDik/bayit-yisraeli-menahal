@@ -1,0 +1,16 @@
+{
+  // Cloudflare Workers Static Assets config. Without this file, `wrangler deploy`
+  // tries to auto-configure the Vite plugin, which requires Vite >= 6; this app is
+  // on Vite 5, so we configure the static-asset serving explicitly instead.
+  //
+  // The app is a client-routed SPA (react-router): unknown paths must return
+  // index.html so deep links like /terms and /privacy resolve. Real files that
+  // exist in dist (sitemap.xml, robots.txt, favicons, hashed JS/CSS) are still
+  // served as themselves — the SPA fallback only applies when no file matches.
+  "name": "bayit-yisraeli-menahal",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
