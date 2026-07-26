@@ -24,17 +24,35 @@ const ResetPassword = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-      setChecking(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || session) {
+    // Only a genuine recovery flow may show the form. A recovery link carries
+    // recovery params in the URL (PKCE `?code=...`, or implicit `#type=recovery`)
+    // and also triggers a one-time PASSWORD_RECOVERY event. An already signed-in
+    // user who opens this page directly has neither, and must see the
+    // invalid/expired branch rather than a password form.
+    const hasRecoveryParams =
+      window.location.hash.includes('type=recovery') ||
+      new URLSearchParams(window.location.search).has('code');
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
         setReady(true);
         setChecking(false);
       }
     });
-    return () => sub.subscription.unsubscribe();
+
+    if (hasRecoveryParams) {
+      setReady(true);
+      setChecking(false);
+    }
+
+    // No recovery params: give the token exchange a brief window to fire
+    // PASSWORD_RECOVERY before concluding the link is invalid or expired.
+    const timer = hasRecoveryParams ? undefined : setTimeout(() => setChecking(false), 1500);
+
+    return () => {
+      sub.subscription.unsubscribe();
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
