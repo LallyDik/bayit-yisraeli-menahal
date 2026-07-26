@@ -29,6 +29,13 @@ Deno.serve(async (req) => {
     return json({ error: 'invalid json' }, 400);
   }
 
+  // req.json() only rejects malformed JSON, not a valid-but-non-object body
+  // (null, a number, a string, an array). Guard so validateFeedback never
+  // dereferences a non-object, and the reply keeps its CORS headers.
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+    return json({ error: 'invalid json' }, 400);
+  }
+
   const validated = validateFeedback(body);
   if (!validated.ok) {
     // The honeypot answers 200 so a bot cannot tell it was caught.
