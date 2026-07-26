@@ -36,3 +36,10 @@ VITE_SUPABASE_ANON_KEY=...
 ```
 
 אין לשמור מפתחות סודיים או `service_role` בקוד הלקוח.
+
+## פריסה
+
+האתר מתארח על Cloudflare Workers (Static Assets) ונבנה אוטומטית מענף `main`:
+`bun run build` יוצר את `dist`, ו־`npx wrangler deploy` מעלה אותו. הגדרות ההגשה
+ב־`wrangler.jsonc` (כולל `not_found_handling: single-page-application` לניתוב ה־SPA).
+הדומיין: `https://nihulschirut.com`.
