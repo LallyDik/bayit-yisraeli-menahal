@@ -8,6 +8,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   completeOnboarding: (version: number) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -49,6 +51,18 @@ export const useAuthProvider = (): AuthContextType => {
     if (error) throw error;
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -73,7 +87,7 @@ export const useAuthProvider = (): AuthContextType => {
     if (error) throw error;
   };
 
-  return { user, loading, signIn, signInWithGoogle, signUp, completeOnboarding, signOut };
+  return { user, loading, signIn, signInWithGoogle, signUp, requestPasswordReset, updatePassword, completeOnboarding, signOut };
 };
 
 export { AuthContext };
