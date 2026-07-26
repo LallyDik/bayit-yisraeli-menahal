@@ -71,11 +71,23 @@ Deno.serve(async (req) => {
     return json({ error: 'could not save feedback' }, 500);
   }
 
+  // Protect the shared Gmail quota (payment reminders use the same account):
+  // during a burst, keep saving rows but stop emailing. The honeypot already
+  // stops naive bots; this bounds the blast radius of one that skips it. A
+  // per-IP limit or a Cloudflare WAF rule is the fuller fix if abuse persists.
+  const EMAIL_BURST_LIMIT = 3;
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { count: recent } = await supabase
+    .from('feedback')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', since);
+  const withinEmailBudget = (recent ?? 0) <= EMAIL_BURST_LIMIT;
+
   // The row is already safe. A mail failure must not turn a saved submission
   // into an error the user sees and retries.
   const gmailUser = Deno.env.get('GMAIL_USER');
   const gmailPass = Deno.env.get('GMAIL_APP_PASSWORD');
-  if (gmailUser && gmailPass) {
+  if (gmailUser && gmailPass && withinEmailBudget) {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
