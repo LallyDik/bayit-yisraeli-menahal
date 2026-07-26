@@ -12,22 +12,22 @@ const FEATURES = [
   {
     icon: Users,
     title: 'שוכרים ויחידות במקום אחד',
-    body: 'כל דירה, כל שוכר וכל שיוך — מסודר וברור. רואים מי גר איפה, מה שכר הדירה ומתי מתחיל החוזה.',
+    body: 'כל דירה, כל שוכר וכל שיוך - מסודר וברור. רואים מי גר איפה, מה שכר הדירה ומתי מתחיל החוזה.',
   },
   {
     icon: WalletCards,
     title: 'מעקב תשלומי שכר דירה',
-    body: 'מי שילם, כמה נשאר ומתי מגיע החיוב הבא — עם פס התקדמות לכל תשלום, בלי גיליונות אקסל.',
+    body: 'מי שילם, כמה נשאר ומתי מגיע החיוב הבא - עם פס התקדמות לכל תשלום, בלי גיליונות אקסל.',
   },
   {
     icon: Gauge,
     title: 'חשמל, מים וגז לפי מונה',
-    body: 'מזינים קריאת מונה והמערכת מחשבת את החיוב אוטומטית — או סכום קבוע, כפי שנוח לכם.',
+    body: 'מזינים קריאת מונה והמערכת מחשבת את החיוב אוטומטית - או סכום קבוע, כפי שנוח לכם.',
   },
   {
     icon: CalendarClock,
     title: 'לוח שנה עברי ולועזי',
-    body: 'מועדי חיוב לפי הלוח שמתאים לכם — עברי או לועזי — עם ציון המועד הבא לכל תשלום.',
+    body: 'מועדי חיוב לפי הלוח שמתאים לכם - עברי או לועזי - עם ציון המועד הבא לכל תשלום.',
   },
 ];
 
@@ -48,22 +48,22 @@ export const LandingPage = () => (
         <div className="relative mx-auto max-w-3xl text-center">
           <h1 className="font-display text-4xl leading-tight sm:text-6xl">מערכת ניהול שכירות<br />לבעלי דירות</h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-foreground/70">
-            שוכרים, יחידות ותשלומים — שכר דירה, חשמל, מים וגז — הכול במקום אחד, פשוט ובעברית.
+            שוכרים, יחידות ותשלומים - שכר דירה, חשמל, מים וגז - הכול במקום אחד, פשוט ובעברית.
             רואים מי שילם, מה נשאר ומתי מגיע החיוב הבא.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button size="lg" className="rounded-full" onClick={scrollTo('login')}>התחילו עכשיו — בחינם</Button>
+            <Button size="lg" className="rounded-full" onClick={scrollTo('login')}>התחילו עכשיו - בחינם</Button>
             <Button size="lg" variant="outline" className="rounded-full bg-white/70" onClick={scrollTo('features')}>איך זה עובד</Button>
           </div>
           <p className="mx-auto mt-4 max-w-md text-sm text-foreground/60">
-            בשלב פיתוח ראשוני — השימוש חינם. פיצ'רים נוספים שייכנסו בהמשך יהיו בתשלום.
+            בשלב פיתוח ראשוני - השימוש חינם. פיצ'רים נוספים שייכנסו בהמשך יהיו בתשלום.
           </p>
         </div>
       </section>
 
       {/* Features */}
       <section id="features" className="mx-auto max-w-6xl scroll-mt-6 px-5 py-12">
-        <h2 className="text-center font-display text-3xl">כל ניהול השכירות — בלי אקסל</h2>
+        <h2 className="text-center font-display text-3xl">כל ניהול השכירות - בלי אקסל</h2>
         <p className="mx-auto mt-2 max-w-2xl text-center text-muted-foreground">
           מערכת אחת שמחליפה את הפתקים והגיליונות: ניהול נכסים, שוכרים ומעקב תשלומים שוטף.
         </p>

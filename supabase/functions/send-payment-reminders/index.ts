@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-// nodemailer, not denomailer: denomailer emits RFC-invalid MIME for Hebrew —
+// nodemailer, not denomailer: denomailer emits RFC-invalid MIME for Hebrew -
 // literal spaces inside RFC 2047 encoded-words (which terminate the encoded
 // word, so Gmail shows the raw subject) and lowercase quoted-printable hex.
 import nodemailer from 'npm:nodemailer@6.9.14';
@@ -62,7 +62,7 @@ function buildEmail(rows: Row[]) {
     <p style="margin:0 0 4px;font-weight:700;color:#0E5F5D;">ניהול שכירות</p>
     <h1 style="margin:0 0 6px;font-size:24px;">יש חיובים שעדיין לא עודכנו</h1>
     <p style="margin:0 0 20px;color:#5B6E80;font-size:15px;">
-      אלה חיובים שהגיע מועדם ועדיין לא סומנו כשולמו. אם כבר קיבלת את הכסף — שווה לעדכן כדי שהמעקב יישאר מדויק.
+      אלה חיובים שהגיע מועדם ועדיין לא סומנו כשולמו. אם כבר קיבלת את הכסף - שווה לעדכן כדי שהמעקב יישאר מדויק.
     </p>
     ${blocks}
     <p style="margin:18px 0 22px;font-size:16px;">סה״כ ממתין: <strong>${shekel(total)}</strong></p>

@@ -12,7 +12,7 @@ export async function listTenants(): Promise<Tenant[]> {
 }
 
 export async function createTenant(input: Omit<TenantInsert, 'owner_id' | 'id'>): Promise<Tenant> {
-  // owner_id is omitted on purpose — the database fills it from the JWT.
+  // owner_id is omitted on purpose - the database fills it from the JWT.
   const { data, error } = await supabase.from('tenants').insert(input).select().single();
   if (error) throw error;
   return data;

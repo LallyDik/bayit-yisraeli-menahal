@@ -30,7 +30,7 @@ export const ConfirmArchive: React.FC<ConfirmArchiveProps> = ({
         <AlertDialogDescription className="text-base leading-7">
           {activeAssignment
             ? `${entityKind === 'tenant' ? 'השכירות הפעילה תסתיים והיחידה' : 'השכירות הפעילה תסתיים והשוכר'} “${activeAssignment}” יישאר ללא שיוך. הרשומה תועבר לארכיון וההיסטוריה תישמר.`
-            : 'הרשומה תוסתר מהמסך אך לא תימחק — כל ההיסטוריה נשמרת.'}
+            : 'הרשומה תוסתר מהמסך אך לא תימחק - כל ההיסטוריה נשמרת.'}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

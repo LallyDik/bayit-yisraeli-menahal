@@ -108,7 +108,7 @@ export const useBilling = () => {
     // Rent must be matched to the *current* billing period, the way term
     // charges already are. Simply taking the newest rent charge meant that at
     // the start of a new month last month's payment kept showing as if it
-    // belonged to the new one — the card read "מועד נוכחי: <this month>" while
+    // belonged to the new one - the card read "מועד נוכחי: <this month>" while
     // displaying the previous month's paid/owed amounts.
     const map = new Map<string, ChargeWithPaid>();
     const rentCharges = charges.filter((charge) => charge.payment_type === 'rent');
@@ -239,7 +239,7 @@ export const useBilling = () => {
       const fallback = currentRentPeriod();
       const period = scheduled ? {
         dueDate: scheduled.dueDate,
-        label: `שכר דירה — ${scheduled.label}`,
+        label: `שכר דירה - ${scheduled.label}`,
         periodKey: `rent:${scheduled.occurrenceKey}`,
       } : fallback;
       const existing = currentRentByTenancyId.get(tenancy.id);
@@ -275,7 +275,7 @@ export const useBilling = () => {
       const fallback = currentRentPeriod();
       const period = scheduled ? {
         dueDate: scheduled.dueDate,
-        label: `שכר דירה — ${scheduled.label}`,
+        label: `שכר דירה - ${scheduled.label}`,
         periodKey: `rent:${scheduled.occurrenceKey}`,
       } : fallback;
       const existing = currentRentByTenancyId.get(input.tenancy.id);
@@ -340,7 +340,7 @@ export const useBilling = () => {
       const fallback = currentChargePeriod(input.paymentType);
       const period = scheduled ? {
         dueDate: scheduled.dueDate,
-        label: `${title} — ${scheduled.label}`,
+        label: `${title} - ${scheduled.label}`,
         periodKey: `term:${term.id}:${scheduled.occurrenceKey}`,
       } : fallback;
       const existing = charges.find((charge) => (

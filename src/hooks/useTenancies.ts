@@ -21,7 +21,7 @@ export const useTenancies = () => {
   // unconditionally (above the auth `loading`/`!user` guards in Index), so
   // its query fires immediately, before sign-in resolves. Without the user id
   // in the key, that first fetch runs as anonymous, RLS correctly returns [],
-  // and — because signing in doesn't invalidate an already-settled query —
+  // and - because signing in doesn't invalidate an already-settled query -
   // a returning user with real tenancies would see a stale, silently-empty list
   // after logging in. Scoping the key by user id makes sign-in produce a
   // fresh cache entry instead of reusing the anonymous one, and `enabled`
@@ -75,7 +75,7 @@ export const useTenancies = () => {
     refetch,
     // *Async: the tenant form drives create/end/update as a sequence of
     // dependent writes (e.g. end the old tenancy, then create the new one),
-    // so callers need to await each step and react to failure — not just
+    // so callers need to await each step and react to failure - not just
     // fire-and-forget. onSuccess/onError above still run either way.
     createTenancy: create.mutateAsync,
     endTenancy: end.mutateAsync,

@@ -12,7 +12,7 @@ import { AttachmentsSection } from '@/components/AttachmentsSection';
 import type { Tenant, Unit } from '@/types';
 import { localDateISO } from '@/utils/date';
 
-// Sentinel for "no unit" — Radix Select rejects an empty-string item value,
+// Sentinel for "no unit" - Radix Select rejects an empty-string item value,
 // and we need an explicit, selectable option for "this tenant has no unit"
 // (not just an unset/placeholder state).
 const NO_UNIT = 'none';
@@ -28,7 +28,7 @@ interface TenantFormProps {
     start_date: string;
   }) => void | Promise<void>;
   units: Unit[];
-  // Units with a live tenancy right now (any tenant, not just this one) —
+  // Units with a live tenancy right now (any tenant, not just this one) -
   // used to keep two tenants from being offered the same unit in the Select.
   occupiedUnitIds: Set<string>;
   initialData?: Partial<Tenant> & { unit_id?: string | null; monthly_rent?: number | null; start_date?: string };
@@ -57,7 +57,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Free units, plus (when editing) this tenant's own currently-assigned
-  // unit — so re-saving an unrelated field doesn't force them to move out.
+  // unit - so re-saving an unrelated field doesn't force them to move out.
   const availableUnits = units.filter(
     (u) => !occupiedUnitIds.has(u.id) || u.id === initialData.unit_id,
   );
@@ -67,7 +67,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
     setError(null);
     if (id === NO_UNIT) return;
     // Prefill from the unit's template. This is a starting value, not a
-    // binding one — see the helper text below the rent field.
+    // binding one - see the helper text below the rent field.
     const unit = units.find((u) => u.id === id);
     if (unit?.default_rent != null && rent === '') setRent(String(unit.default_rent));
   };
@@ -88,7 +88,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
       return;
     }
     // A date field accepts a four-digit year, so a slip on the keyboard can save
-    // something like the year 0485 — which then drives the whole billing schedule.
+    // something like the year 0485 - which then drives the whole billing schedule.
     if (hasUnit && startDate) {
       const year = Number(startDate.slice(0, 4));
       if (!Number.isFinite(year) || year < 1990 || year > 2100) {
@@ -177,7 +177,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="tenant-phone" className="text-base font-medium">טלפון — אופציונלי</Label>
+            <Label htmlFor="tenant-phone" className="text-base font-medium">טלפון - אופציונלי</Label>
             <Input
               id="tenant-phone" type="tel" value={phone} autoComplete="tel" className="text-lg p-3 ltr"
               onChange={(e) => setPhone(e.target.value)}
@@ -185,7 +185,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tenant-email" className="text-base font-medium">מייל — אופציונלי</Label>
+            <Label htmlFor="tenant-email" className="text-base font-medium">מייל - אופציונלי</Label>
             <Input
               id="tenant-email" type="email" value={email} autoComplete="email" className="text-lg p-3 ltr"
               onChange={(e) => setEmail(e.target.value)}
@@ -194,7 +194,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tenant-description" className="text-base font-medium">תיאור — אופציונלי</Label>
+            <Label htmlFor="tenant-description" className="text-base font-medium">תיאור - אופציונלי</Label>
             <Textarea
               id="tenant-description" value={description} className="text-right"
               onChange={(e) => setDescription(e.target.value)}
@@ -202,7 +202,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tenant-notes" className="text-base font-medium">הערות — אופציונלי</Label>
+            <Label htmlFor="tenant-notes" className="text-base font-medium">הערות - אופציונלי</Label>
             <Textarea
               id="tenant-notes" value={notes} className="text-right"
               onChange={(e) => setNotes(e.target.value)}

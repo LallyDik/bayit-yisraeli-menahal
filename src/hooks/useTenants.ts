@@ -10,7 +10,7 @@ export const useTenants = () => {
   // unconditionally (above the auth `loading`/`!user` guards in Index), so
   // its query fires immediately, before sign-in resolves. Without the user id
   // in the key, that first fetch runs as anonymous, RLS correctly returns [],
-  // and — because signing in doesn't invalidate an already-settled query —
+  // and - because signing in doesn't invalidate an already-settled query -
   // a returning user with real tenants would see a stale, silently-empty grid
   // after logging in. Scoping the key by user id makes sign-in produce a
   // fresh cache entry instead of reusing the anonymous one, and `enabled`

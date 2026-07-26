@@ -32,7 +32,7 @@ export async function uploadAttachment(file: File, parent: AttachmentParent): Pr
     ...('unitId' in parent ? { unit_id: parent.unitId } : { tenant_id: parent.tenantId }),
   }).select().single();
   if (error) {
-    // The object is in storage but the row failed — remove the orphan, then surface the real error.
+    // The object is in storage but the row failed - remove the orphan, then surface the real error.
     await supabase.storage.from('attachments').remove([path]);
     throw error;
   }

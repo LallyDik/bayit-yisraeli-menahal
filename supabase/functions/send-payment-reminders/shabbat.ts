@@ -4,7 +4,7 @@ import { HebrewCalendar, Location, flags } from '@hebcal/core';
 // "Friday evening" and then separately listing every חג, we lean on the one rule
 // that already covers both: the window between candle lighting and havdalah.
 // Hebcal emits that pair for Shabbat *and* for every Yom Tov, so a single check
-// handles ערב שבת, שבת, ראש השנה, יום כיפור, סוכות, פסח, שבועות — including the
+// handles ערב שבת, שבת, ראש השנה, יום כיפור, סוכות, פסח, שבועות - including the
 // two-day and back-to-back cases (e.g. Shabbat immediately after a חג), where
 // the quiet window simply runs continuously until the final havdalah.
 
@@ -45,7 +45,7 @@ function timedEvents(now: Date): TimedEvent[] {
     const mask = event.getFlags();
     // Order matters: hebcal's HavdalahEvent also carries LIGHT_CANDLES_TZEIS,
     // so testing the flags first would misread the *end* of a window as a new
-    // start — and the quiet window would never close.
+    // start - and the quiet window would never close.
     if (event.getDesc() === 'Havdalah') {
       out.push({ time, kind: 'end', label: event.render('he') });
     } else if (mask & flags.LIGHT_CANDLES || mask & flags.LIGHT_CANDLES_TZEIS) {

@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 //
 // The mark-charge-paid Edge Function does the actual work and then redirects
 // here, because Supabase serves every Edge Function response on the default
-// *.supabase.co domain as text/plain with nosniff — so a confirmation page
+// *.supabase.co domain as text/plain with nosniff - so a confirmation page
 // rendered there arrives as raw source, not as a page. Redirecting means the
 // confirmation renders in the app, which also puts the updated data one glance
 // away.
 //
 // These params arrive from the URL and anyone can craft them, so they only ever
-// drive a message — never a data change. The payment itself already happened
+// drive a message - never a data change. The payment itself already happened
 // server-side, guarded by the single-use token.
 
 type Status = 'ok' | 'already' | 'expired' | 'invalid';
@@ -40,7 +40,7 @@ export const PaidConfirmation: React.FC = () => {
     const money = Number.isFinite(amount) && amount > 0
       ? `₪${amount.toLocaleString('he-IL', { maximumFractionDigits: 2 })}`
       : null;
-    const detail = [parts.join(' · ') || null, money].filter(Boolean).join(' — ') || null;
+    const detail = [parts.join(' · ') || null, money].filter(Boolean).join(' - ') || null;
 
     setState({ status, detail });
 

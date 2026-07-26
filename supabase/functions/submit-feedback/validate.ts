@@ -1,5 +1,5 @@
 // Pure input validation, kept in its own module so it can be unit tested with
-// Vitest without booting Deno — the same split as shabbat.ts and yemot.ts.
+// Vitest without booting Deno - the same split as shabbat.ts and yemot.ts.
 
 export const MAX_MESSAGE_LENGTH = 2000;
 const MAX_PAGE_LENGTH = 200;

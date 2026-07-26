@@ -45,7 +45,7 @@ const amount = (value: number) => `₪${value.toLocaleString()}`;
 
 const chargeSeriesKey = (charge: ChargeWithPaid) => {
   const termMatch = charge.period_key.match(/^term:([^:]+):/);
-  return termMatch ? `term:${termMatch[1]}` : `${charge.payment_type}:${charge.label.split(' — ')[0].trim()}`;
+  return termMatch ? `term:${termMatch[1]}` : `${charge.payment_type}:${charge.label.split(' - ')[0].trim()}`;
 };
 
 function PaymentStatus({ due, paid, billed = true }: { due: number; paid: number; billed?: boolean }) {

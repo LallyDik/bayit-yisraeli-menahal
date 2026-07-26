@@ -12,7 +12,7 @@ export async function listUnits(): Promise<Unit[]> {
 }
 
 export async function createUnit(input: Omit<UnitInsert, 'owner_id' | 'id'>): Promise<Unit> {
-  // owner_id is omitted on purpose — the database fills it from the JWT.
+  // owner_id is omitted on purpose - the database fills it from the JWT.
   const { data, error } = await supabase.from('units').insert(input).select().single();
   if (error) throw error;
   return data;

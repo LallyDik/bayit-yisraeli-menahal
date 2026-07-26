@@ -67,7 +67,7 @@ const STEPS: GuideStep[] = [
   {
     eyebrow: '3 · תשלומים',
     title: 'כאן מנהלים את כל החיובים',
-    description: 'במסך התשלומים מגדירים מועד חיוב, מסמנים שכ״ד ששולם ומנהלים חשמל, מים וחיובים נוספים — בסכום קבוע או לפי מונה.',
+    description: 'במסך התשלומים מגדירים מועד חיוב, מסמנים שכ״ד ששולם ומנהלים חשמל, מים וחיובים נוספים - בסכום קבוע או לפי מונה.',
     icon: ReceiptText,
     selectors: ['[data-guide="payments-tab"]'],
     view: 'payments',
@@ -273,7 +273,7 @@ export function FirstLoginGuide({
         }
         // The node can be swapped out from under us by the very tab switch this
         // effect just triggered (and the payments view is lazy-loaded), leaving a
-        // detached 0x0 element. Retry — and always clear the locating flag, or the
+        // detached 0x0 element. Retry - and always clear the locating flag, or the
         // coachmark stays opacity-0 behind the backdrop and the guide looks frozen.
         if (attempt < 12) {
           retryTimer = window.setTimeout(() => syncTarget(attempt + 1), 80);

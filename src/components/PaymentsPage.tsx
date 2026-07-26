@@ -64,7 +64,7 @@ const STATUS_STYLES: Record<PaymentState, { label: string; pill: string; dot: st
 };
 
 const PaymentBadge = ({ charge }: { charge?: ChargeWithPaid }) => {
-  // No charge yet means "not billed", not "unpaid" — a screen of red debt
+  // No charge yet means "not billed", not "unpaid" - a screen of red debt
   // warnings on day one reads as alarm. Reserve the red for a real unpaid charge.
   if (!charge) {
     return (
@@ -89,7 +89,7 @@ const PaymentBadge = ({ charge }: { charge?: ChargeWithPaid }) => {
 const shownPaid = (paid: number, due: number) => Math.min(Math.max(paid, 0), Math.max(due, 0));
 
 // The page's signature element: a slim paid-vs-owed meter tying every card
-// together around what this screen is actually about — money in vs money due.
+// together around what this screen is actually about - money in vs money due.
 const PaidMeter = ({ paid, due }: { paid: number; due: number }) => {
   const state: PaymentState = paid <= 0 ? 'unpaid' : paid >= due ? 'paid' : 'partial';
   const pct = due > 0 ? Math.min(Math.round((paid / due) * 100), 100) : 0;
@@ -179,7 +179,7 @@ function UtilityCard({
   // The first-ever cycle on a unit has no meter history to auto-fill the
   // previous reading, so let it be entered by hand as an opening reading.
   const isFirstReading = readings.length === 0 && !currentCharge && !(Number(previousReading) > 0);
-  // Setting the ₪/unit is the real first step — surface it instead of a dead
+  // Setting the ₪/unit is the real first step - surface it instead of a dead
   // compute button when the rate hasn't been configured yet.
   const needsRateSetup = calculationType === 'meter' && !hasRate && !currentCharge;
   const canCompute = calculationType === 'meter' ? canCalculateMeter : Number(fixedAmount) > 0;
@@ -222,7 +222,7 @@ function UtilityCard({
 
   return (
     <div className="payments-card flex flex-col self-start rounded-2xl border bg-card p-4 shadow-sm" data-guide={`${type}-card`}>
-      {/* Header — identity, status, and the quiet settings control */}
+      {/* Header - identity, status, and the quiet settings control */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-foreground">
@@ -252,7 +252,7 @@ function UtilityCard({
         </div>
       ) : (
         <>
-          {/* Compute — full editor while creating/editing, else a calm summary line */}
+          {/* Compute - full editor while creating/editing, else a calm summary line */}
           <div className="mt-4">
             {!currentCharge || editingCompute ? (
               <>
@@ -391,7 +391,7 @@ interface PaymentsPageProps {
   onClearFocus: () => void;
   onAddTenant: () => void;
   onMarkRentPaid: (tenancy: TenancyWithNames) => Promise<void>;
-  /** Opens the tenancy for editing — the only place the monthly rent can be set. */
+  /** Opens the tenancy for editing - the only place the monthly rent can be set. */
   onEditTenancy: (tenancy: TenancyWithNames) => void;
   onSaveRentPayment: (input: { tenancy: TenancyWithNames; amountDue: number; paidAmount: number; paidAt: string }) => Promise<void>;
   onSaveUtilityCharge: UtilityCardProps['onCalculate'];
@@ -526,7 +526,7 @@ export function PaymentsPage({
               <ReceiptText className="h-6 w-6" />
             </div>
             <h2 className="text-3xl font-display">כל התשלומים במקום אחד</h2>
-            <p className="mt-1 text-muted-foreground">שכירות, מונים וחיובים קבועים — לפי יחידה ושוכר.</p>
+            <p className="mt-1 text-muted-foreground">שכירות, מונים וחיובים קבועים - לפי יחידה ושוכר.</p>
           </div>
           <div className="flex flex-col gap-3 sm:items-end">
             <div className="grid grid-cols-3 gap-2 rounded-2xl bg-muted p-2 text-center">
@@ -636,7 +636,7 @@ export function PaymentsPage({
           <section key={tenancy.id} className="overflow-hidden rounded-[2rem] border bg-card">
             <div className="flex flex-col gap-3 border-b bg-muted/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-xl font-display">{tenancy.unit_name} — {tenancy.tenant_name}</h3>
+                <h3 className="text-xl font-display">{tenancy.unit_name} - {tenancy.tenant_name}</h3>
                 <p className="text-sm text-muted-foreground">כל החיובים של השכירות הפעילה</p>
               </div>
               <Button variant="outline" className="rounded-full" onClick={() => setAddingFor(tenancy)}>
@@ -950,7 +950,7 @@ function MeterTermRow({
         </div>
       </div>
 
-      {/* Compute — full editor while creating/editing, else a calm summary line */}
+      {/* Compute - full editor while creating/editing, else a calm summary line */}
       <div className="mt-4">
         {!charge || editingCompute ? (
           <>

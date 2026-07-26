@@ -34,7 +34,7 @@ export async function endTenancy(id: string, endDate: string): Promise<void> {
   if (error) throw error;
 }
 
-// For in-place edits to a live tenancy (e.g. renegotiated rent) — as opposed
+// For in-place edits to a live tenancy (e.g. renegotiated rent) - as opposed
 // to endTenancy + createTenancy, which is how a *move* is recorded. Using
 // this for a rent change (rather than ending and recreating) avoids
 // fabricating a fake move-out in the rental history.

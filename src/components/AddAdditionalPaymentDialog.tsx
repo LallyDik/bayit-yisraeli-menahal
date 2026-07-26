@@ -148,7 +148,7 @@ export function AddAdditionalPaymentDialog({
             </div>
             <DialogTitle className="text-2xl">{isEditing ? 'עריכת תשלום' : 'הוספת תשלום'}</DialogTitle>
             <DialogDescription className="text-foreground/65">
-              {tenancy.unit_name} — {tenancy.tenant_name}
+              {tenancy.unit_name} - {tenancy.tenant_name}
             </DialogDescription>
           </DialogHeader>
         </div>

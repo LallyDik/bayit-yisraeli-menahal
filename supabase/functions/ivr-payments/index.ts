@@ -4,16 +4,16 @@ import { shabbatQuietWindow } from './shabbat.ts';
 
 // The phone management hub. The landlord calls the Yemot number and reaches a
 // main menu:
-//   1 — go through every open charge (not just overdue ones), and per charge:
+//   1 - go through every open charge (not just overdue ones), and per charge:
 //         1 mark paid · 2 voice-remind the tenant · 3 next · 9 back to menu
-//   2 — hear a spoken summary of the month
-//   9 — finish
+//   2 - hear a spoken summary of the month
+//   9 - finish
 //
 // Yemot drives this one step at a time, so each request rebuilds its context
 // from ivr_call_state. Two things are frozen there: the charge list (marking
 // one paid removes it from the open set, which would renumber everything still
 // ahead of the caller), and a single step counter that names each keypad
-// prompt — so a value from an earlier stage is never mistaken for a later one.
+// prompt - so a value from an earlier stage is never mistaken for a later one.
 
 const SEND_TTS_URL = 'https://www.call2all.co.il/ym/api/SendTTS';
 const CHARGE_DIGITS = ['1', '2', '3', '9'];
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
   const state = existing as State;
   const pressed = params.get(`s${state.step}`);
   if (!pressed) {
-    // No value yet (first delivery of this step, or a timeout) — ask again,
+    // No value yet (first delivery of this step, or a timeout) - ask again,
     // at the same step so the prompt and the awaited value stay in sync.
     return reply(await renderCurrent(supabase, state));
   }
@@ -253,7 +253,7 @@ async function handleCharge(supabase: Client, state: State, pressed: string): Pr
 
 // ---- Renderers ----
 
-/** Re-emit the current prompt without advancing — for a step re-delivered
+/** Re-emit the current prompt without advancing - for a step re-delivered
  *  without a keypress. */
 async function renderCurrent(supabase: Client, state: State): Promise<string> {
   return state.stage === 'menu'

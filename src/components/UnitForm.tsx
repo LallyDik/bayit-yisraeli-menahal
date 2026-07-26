@@ -11,7 +11,7 @@ import { Plus } from 'lucide-react';
 import { AttachmentsSection } from '@/components/AttachmentsSection';
 import type { Unit } from '@/types';
 
-// Sentinel for "not specified" — Radix Select rejects an empty-string item
+// Sentinel for "not specified" - Radix Select rejects an empty-string item
 // value, and we need an explicit, selectable option to represent null
 // (not just an unset/placeholder state).
 const NOT_SPECIFIED = 'not-specified';
@@ -104,7 +104,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="unit-rent" className="text-base font-medium">
-              שכר דירה מבוקש (₪) — אופציונלי
+              שכר דירה מבוקש (₪) - אופציונלי
             </Label>
             <Input
               id="unit-rent" type="number" min="0" value={rent} className="text-lg p-3 ltr"
@@ -117,7 +117,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="unit-area" className="text-base font-medium">מ"ר — אופציונלי</Label>
+              <Label htmlFor="unit-area" className="text-base font-medium">מ"ר - אופציונלי</Label>
               <Input
                 id="unit-area" type="number" min="1" step="0.5" value={areaSqm} className="text-lg p-3 ltr"
                 onChange={(e) => setAreaSqm(e.target.value)}
@@ -125,7 +125,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit-rooms" className="text-base font-medium">חדרים — אופציונלי</Label>
+              <Label htmlFor="unit-rooms" className="text-base font-medium">חדרים - אופציונלי</Label>
               <Input
                 id="unit-rooms" type="number" min="0.5" step="0.5" value={rooms} className="text-lg p-3 ltr"
                 onChange={(e) => setRooms(e.target.value)}
@@ -133,7 +133,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit-condition" className="text-base font-medium">מצב — אופציונלי</Label>
+              <Label htmlFor="unit-condition" className="text-base font-medium">מצב - אופציונלי</Label>
               <Select value={condition} onValueChange={setCondition}>
                 <SelectTrigger id="unit-condition" className="text-lg p-3"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -146,7 +146,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit-furnishing" className="text-base font-medium">ריהוט — אופציונלי</Label>
+              <Label htmlFor="unit-furnishing" className="text-base font-medium">ריהוט - אופציונלי</Label>
               <Select value={furnishing} onValueChange={setFurnishing}>
                 <SelectTrigger id="unit-furnishing" className="text-lg p-3"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -159,7 +159,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit-air-conditioned" className="text-base font-medium">ממוזגת — אופציונלי</Label>
+              <Label htmlFor="unit-air-conditioned" className="text-base font-medium">ממוזגת - אופציונלי</Label>
               <Select value={airConditioned} onValueChange={setAirConditioned}>
                 <SelectTrigger id="unit-air-conditioned" className="text-lg p-3"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -172,7 +172,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="unit-year" className="text-base font-medium">
-                שנת בנייה / שיפוץ אחרון — אופציונלי
+                שנת בנייה / שיפוץ אחרון - אופציונלי
               </Label>
               <Input
                 id="unit-year" type="number" min="1800" max="2100" value={yearBuiltOrRenovated}
@@ -183,7 +183,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="unit-description" className="text-base font-medium">תיאור — אופציונלי</Label>
+            <Label htmlFor="unit-description" className="text-base font-medium">תיאור - אופציונלי</Label>
             <Textarea
               id="unit-description" value={description} className="text-right"
               onChange={(e) => setDescription(e.target.value)}
@@ -191,7 +191,7 @@ export const UnitForm: React.FC<UnitFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="unit-notes" className="text-base font-medium">הערות — אופציונלי</Label>
+            <Label htmlFor="unit-notes" className="text-base font-medium">הערות - אופציונלי</Label>
             <Textarea
               id="unit-notes" value={notes} className="text-right"
               onChange={(e) => setNotes(e.target.value)}
