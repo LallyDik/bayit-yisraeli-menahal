@@ -2,16 +2,20 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
 
-// Rendered on the landing page, inside the signed-in app and on both legal
-// pages, so the terms stay one click away no matter where the visitor is.
+// Compact single-row footer: brand, legal links, feedback trigger and credit
+// sit on one line and wrap only when the viewport is too narrow. Rendered on
+// the landing page, the signed-in app and both legal pages.
 export const SiteFooter = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
-    <footer className="border-t px-5 py-8 text-center text-sm text-muted-foreground">
-      <p>ניהול שכירות - מערכת לניהול נכסים, שוכרים ותשלומים לבעלי דירות.</p>
-
-      <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2" aria-label="קישורים משפטיים">
+    <footer className="border-t px-5 py-4 text-xs text-muted-foreground">
+      <nav
+        className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1"
+        aria-label="ניווט תחתון"
+      >
+        <span className="font-medium text-foreground/80">ניהול שכירות</span>
+        <span aria-hidden="true">·</span>
         <Link to="/terms" className="rounded hover:text-foreground hover:underline">תנאי שימוש</Link>
         <span aria-hidden="true">·</span>
         <Link to="/privacy" className="rounded hover:text-foreground hover:underline">מדיניות פרטיות</Link>
@@ -23,9 +27,7 @@ export const SiteFooter = () => {
         >
           שליחת משוב
         </button>
-      </nav>
-
-      <p className="mt-4">
+        <span aria-hidden="true">·</span>
         <a
           href="https://leahdick-dev.com/"
           target="_blank"
@@ -34,7 +36,7 @@ export const SiteFooter = () => {
         >
           פותח על ידי לאה דיקמן
         </a>
-      </p>
+      </nav>
 
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </footer>
