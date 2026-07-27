@@ -282,6 +282,7 @@ export type Database = {
           id: string
           monthly_rent: number
           owner_id: string
+          payment_method: 'cash' | 'check' | 'transfer' | null
           start_date: string
           tenant_id: string
           unit_id: string
@@ -292,6 +293,7 @@ export type Database = {
           id?: string
           monthly_rent?: number
           owner_id?: string
+          payment_method?: 'cash' | 'check' | 'transfer' | null
           start_date?: string
           tenant_id: string
           unit_id: string
@@ -302,6 +304,7 @@ export type Database = {
           id?: string
           monthly_rent?: number
           owner_id?: string
+          payment_method?: 'cash' | 'check' | 'transfer' | null
           start_date?: string
           tenant_id?: string
           unit_id?: string
