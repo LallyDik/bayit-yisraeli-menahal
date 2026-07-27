@@ -21,6 +21,7 @@ type Row = {
 
 const APP_URL = 'https://nihulschirut.com/';
 const MARK_PAID_URL = 'https://lwmddgwwfirkcaqaxdbh.supabase.co/functions/v1/mark-charge-paid';
+const UNSUB_URL = 'https://lwmddgwwfirkcaqaxdbh.supabase.co/functions/v1/unsubscribe';
 const TOKEN_TTL_DAYS = 14;
 const shekel = (n: number) => `₪${Number(n).toLocaleString('he-IL', { maximumFractionDigits: 2 })}`;
 const heDate = (iso: string) => new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -29,7 +30,7 @@ const heDate = (iso: string) => new Intl.DateTimeFormat('he-IL', { day: 'numeric
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body, null, 2), { status, headers: { 'Content-Type': 'application/json' } });
 
-function buildEmail(rows: Row[]) {
+function buildEmail(rows: Row[], unsubscribeUrl: string) {
   const total = rows.reduce((sum, r) => sum + Number(r.remaining), 0);
 
   // Group by tenant + unit so the landlord reads it the way they think about it.
@@ -69,8 +70,11 @@ function buildEmail(rows: Row[]) {
     <a href="${APP_URL}" style="display:inline-block;background:#1E9E9B;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:700;">
       פתחו את המערכת לעדכון
     </a>
-    <p style="margin:26px 0 0;color:#8A9AA8;font-size:12px;">
+    <p style="margin:26px 0 6px;color:#8A9AA8;font-size:12px;">
       נשלח אוטומטית ממערכת ניהול השכירות. תזכורות אינן נשלחות בשבת ובחגים.
+    </p>
+    <p style="margin:0;color:#8A9AA8;font-size:12px;">
+      לא רוצים לקבל תזכורות? <a href="${unsubscribeUrl}" style="color:#8A9AA8;">לחצו כאן לביטול</a>.
     </p>
   </div>`;
 
@@ -137,6 +141,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Get-or-create the owner's settings row to read the preference and the
+      // stable unsubscribe token. A missing row means opted-in (default true).
+      await supabase.from('notification_settings')
+        .upsert({ owner_id: ownerId }, { onConflict: 'owner_id', ignoreDuplicates: true });
+      const { data: prefs } = await supabase.from('notification_settings')
+        .select('email_reminders, unsubscribe_token').eq('owner_id', ownerId).maybeSingle();
+      if (prefs && prefs.email_reminders === false) {
+        results.push({ ownerId, to, sent: false, reason: 'unsubscribed' });
+        continue;
+      }
+      const unsubscribeUrl = `${UNSUB_URL}?token=${prefs?.unsubscribe_token ?? ''}`;
+
       // A fresh single-use token per charge, so each "mark paid" link works once
       // and stops working after two weeks even if the mail is forwarded.
       const expiresAt = new Date(Date.now() + TOKEN_TTL_DAYS * 86_400_000).toISOString();
@@ -148,7 +164,7 @@ Deno.serve(async (req) => {
         rowsWithTokens.push(tokenError ? row : { ...row, token });
       }
 
-      const { subject, html, total } = buildEmail(rowsWithTokens);
+      const { subject, html, total } = buildEmail(rowsWithTokens, unsubscribeUrl);
       if (dryRun) {
         results.push({ ownerId, to, sent: false, dryRun: true, charges: ownerRows.length, total, subject });
         continue;
@@ -159,6 +175,10 @@ Deno.serve(async (req) => {
         to,
         subject,
         html,
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
       });
       results.push({ ownerId, to, sent: true, charges: ownerRows.length, total });
     }
