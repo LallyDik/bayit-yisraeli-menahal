@@ -48,6 +48,7 @@ import type { BillingOccurrence, BillingSettings, PaymentTerm } from '@/types';
 import type { BillingCalendar } from '@/utils/billingSchedule';
 import { formatBillingDate, formatBillingShortDate } from '@/utils/billingSchedule';
 import { localDateISO } from '@/utils/date';
+import { markPaidLabel } from '@/utils/payment';
 
 type PaymentState = 'paid' | 'partial' | 'unpaid';
 
@@ -694,7 +695,7 @@ export function PaymentsPage({
                     <>
                       <Button size="sm" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => { void onMarkRentPaid(tenancy).catch(() => undefined); }} disabled={rentDue <= rentPaid || pendingKeys.has(tenancy.id)} data-guide="rent-mark-paid">
                         <CheckCircle className="h-4 w-4" />
-                        {pendingKeys.has(tenancy.id) ? 'שומר...' : 'סמן כשולם'}
+                        {pendingKeys.has(tenancy.id) ? 'שומר...' : markPaidLabel(tenancy.payment_method)}
                       </Button>
                       <Button size="sm" variant="outline" className="h-11 flex-1 rounded-full sm:h-9 sm:flex-none" onClick={() => setEditingRent(tenancy)} disabled={pendingKeys.has(tenancy.id)} data-guide="rent-partial">
                         תשלום חלקי

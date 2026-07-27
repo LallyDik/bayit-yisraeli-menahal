@@ -13,6 +13,7 @@ import { PaymentEditorDialog } from '@/components/PaymentEditorDialog';
 import type { ChargeWithPaid } from '@/api/billing';
 import type { TenancyWithNames } from '@/api/tenancies';
 import { formatBillingDate, type BillingCalendar } from '@/utils/billingSchedule';
+import { markPaidLabel } from '@/utils/payment';
 
 interface TenantPaymentSummaryDialogProps {
   open: boolean;
@@ -130,7 +131,7 @@ export function TenantPaymentSummaryDialog({
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <Button type="button" size="sm" className="h-10 flex-1 rounded-full" disabled={rentPaid >= rentDue || pendingKeys.has(tenancy.id)} onClick={() => { void onMarkRentPaid(tenancy).catch(() => undefined); }}>
                   <CheckCircle2 className="h-4 w-4" />
-                  {pendingKeys.has(tenancy.id) ? 'שומר...' : 'סמן כשולם'}
+                  {pendingKeys.has(tenancy.id) ? 'שומר...' : markPaidLabel(tenancy.payment_method)}
                 </Button>
                 <Button type="button" size="sm" variant="outline" className="h-10 flex-1 rounded-full" disabled={pendingKeys.has(tenancy.id)} onClick={() => setEditingPayment({ kind: 'rent' })}>תשלום חלקי</Button>
               </div>
@@ -167,7 +168,7 @@ export function TenantPaymentSummaryDialog({
                         <div className="mt-3 flex gap-2">
                           <Button type="button" size="sm" className="h-9 flex-1 rounded-full" disabled={paid >= due || pending} onClick={() => { void onMarkChargePaid(charge).catch(() => undefined); }}>
                             <CheckCircle2 className="h-4 w-4" />
-                            {pending ? 'שומר...' : 'סמן כשולם'}
+                            {pending ? 'שומר...' : markPaidLabel(tenancy.payment_method)}
                           </Button>
                           <Button type="button" size="sm" variant="outline" className="h-9 flex-1 rounded-full" disabled={pending} onClick={() => setEditingPayment({ kind: 'charge', charge })}>תשלום חלקי</Button>
                         </div>
