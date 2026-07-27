@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import {
@@ -11,6 +11,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Settings,
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -112,6 +113,7 @@ function PageHeading({ title, description, action }: PageHeadingProps) {
 const Index = () => {
   const { user, loading, signOut, completeOnboarding } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tab: AppTab = isAppTab(searchParams.get('view')) ? searchParams.get('view') as AppTab : 'overview';
   const {
     units,
@@ -204,6 +206,22 @@ const Index = () => {
   useEffect(() => {
     document.title = `${TAB_TITLES[tab]} | ניהול שכירות`;
   }, [tab]);
+
+  useEffect(() => {
+    const status = searchParams.get('unsubscribed');
+    if (!status) return;
+    if (status === '1') {
+      toast.success('ביטלת קבלת תזכורות תשלום במייל. אפשר להפעיל מחדש בכל עת דרך ההגדרות.');
+    } else {
+      toast.error('הקישור לביטול אינו תקין.');
+    }
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('unsubscribed');
+      return next;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setGuideDismissed(false);
@@ -508,6 +526,10 @@ const Index = () => {
             <Button type="button" variant="outline" className="rounded-full border-foreground/15 bg-white/55" onClick={() => setGuideOpen(true)} data-guide="help">
               <CircleHelp className="h-4 w-4" />
               מדריך
+            </Button>
+            <Button type="button" variant="outline" className="rounded-full border-foreground/15 bg-white/55" onClick={() => navigate('/settings')} aria-label="הגדרות">
+              <Settings className="h-4 w-4" />
+              הגדרות
             </Button>
             <span className="hidden max-w-48 truncate rounded-full bg-white/70 px-4 py-2 text-sm md:block" dir="ltr" title={user.email ?? undefined}>{user.email}</span>
             <Button type="button" variant="outline" size="sm" className="rounded-full border-foreground/20 bg-white/35 text-foreground hover:bg-foreground hover:text-white" onClick={() => void signOut()} aria-label="התנתקות מהמערכת">
