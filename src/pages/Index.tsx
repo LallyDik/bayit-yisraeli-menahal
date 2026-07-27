@@ -369,6 +369,7 @@ const Index = () => {
     unitId: string | null,
     monthlyRent: number | null,
     startDate: string,
+    paymentMethod: 'cash' | 'check' | 'transfer' | null,
   ): Promise<boolean> => {
     let created: Tenant;
     try {
@@ -383,6 +384,7 @@ const Index = () => {
         unit_id: unitId,
         monthly_rent: monthlyRent ?? 0,
         start_date: startDate,
+        payment_method: paymentMethod,
       });
     } catch {
       toast.error(`השוכר „${created.name}” נשמר, אך לא שויך ליחידה. אפשר לשייך אותו דרך עריכת השוכר.`);
@@ -396,6 +398,7 @@ const Index = () => {
     unitId: string | null,
     monthlyRent: number | null,
     startDate: string,
+    paymentMethod: 'cash' | 'check' | 'transfer' | null,
   ): Promise<boolean> => {
     try {
       await updateTenant({ id: tenant.id, patch: fields });
@@ -413,11 +416,13 @@ const Index = () => {
           unit_id: unitId,
           monthly_rent: monthlyRent ?? 0,
           start_date: startDate,
+          payment_method: paymentMethod,
         });
       } else if (current && unitId && unitId === current.unit_id) {
-        const patch: { monthly_rent?: number; start_date?: string } = {};
+        const patch: { monthly_rent?: number; start_date?: string; payment_method?: 'cash' | 'check' | 'transfer' | null } = {};
         if (monthlyRent !== null && Number(monthlyRent) !== Number(current.monthly_rent)) patch.monthly_rent = monthlyRent;
         if (startDate && startDate !== current.start_date) patch.start_date = startDate;
+        if (paymentMethod !== (current.payment_method ?? null)) patch.payment_method = paymentMethod;
         if (Object.keys(patch).length > 0) await updateTenancy({ id: current.id, patch });
       } else if (!current && unitId) {
         await createTenancy({
@@ -425,6 +430,7 @@ const Index = () => {
           unit_id: unitId,
           monthly_rent: monthlyRent ?? 0,
           start_date: startDate,
+          payment_method: paymentMethod,
         });
       }
     } catch {
@@ -435,14 +441,19 @@ const Index = () => {
   };
 
   const handleTenantSubmit = async (
-    values: TenantFields & { unit_id: string | null; monthly_rent: number | null; start_date: string },
+    values: TenantFields & {
+      unit_id: string | null;
+      monthly_rent: number | null;
+      start_date: string;
+      payment_method: 'cash' | 'check' | 'transfer' | null;
+    },
   ) => {
     setTenantFormSaving(true);
-    const { unit_id, monthly_rent, start_date, ...fields } = values;
+    const { unit_id, monthly_rent, start_date, payment_method, ...fields } = values;
     try {
       const saved = editingTenant
-        ? await saveEditedTenant(editingTenant, fields, unit_id, monthly_rent, start_date)
-        : await saveNewTenant(fields, unit_id, monthly_rent, start_date);
+        ? await saveEditedTenant(editingTenant, fields, unit_id, monthly_rent, start_date, payment_method)
+        : await saveNewTenant(fields, unit_id, monthly_rent, start_date, payment_method);
       if (saved) {
         setAddingTenant(false);
         setEditingTenant(null);
@@ -708,6 +719,7 @@ const Index = () => {
                     unit_id: activeByTenantId.get(editingTenant.id)?.unit_id ?? null,
                     monthly_rent: activeByTenantId.get(editingTenant.id)?.monthly_rent ?? null,
                     start_date: activeByTenantId.get(editingTenant.id)?.start_date ?? localDateISO(),
+                    payment_method: activeByTenantId.get(editingTenant.id)?.payment_method ?? null,
                   } : undefined}
                   submitLabel={editingTenant ? 'שמירת שינויים' : 'הוספת שוכר'}
                   isSubmitting={tenantFormSaving}
