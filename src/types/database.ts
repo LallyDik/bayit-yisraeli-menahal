@@ -195,6 +195,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          email_reminders: boolean
+          open_days_before: number
+          owner_id: string
+          reminder_offset_days: number
+          unsubscribe_token: string
+          updated_at: string
+        }
+        Insert: {
+          email_reminders?: boolean
+          open_days_before?: number
+          owner_id: string
+          reminder_offset_days?: number
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Update: {
+          email_reminders?: boolean
+          open_days_before?: number
+          owner_id?: string
+          reminder_offset_days?: number
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_allocations: {
         Row: {
           amount: number
