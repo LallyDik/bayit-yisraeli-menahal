@@ -33,7 +33,8 @@ import { useTenancies } from '@/hooks/useTenancies';
 import { useBilling } from '@/hooks/useBilling';
 import { FirstLoginGuide } from '@/components/FirstLoginGuide';
 import { absoluteUrl } from '@/config/site';
-import { localDateISO } from '@/utils/date';
+import { localDateISO, addDaysISO } from '@/utils/date';
+import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import {
   CURRENT_ONBOARDING_VERSION,
   shouldShowOnboarding,
@@ -114,6 +115,7 @@ const Index = () => {
   const { user, loading, signOut, completeOnboarding } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { openDaysBefore } = useNotificationSettings();
   const tab: AppTab = isAppTab(searchParams.get('view')) ? searchParams.get('view') as AppTab : 'overview';
   const {
     units,
@@ -256,9 +258,9 @@ const Index = () => {
     });
   }, [charges, occurrencesByTenancyId, paymentTerms]);
   const dueActiveCharges = useMemo(() => {
-    const today = localDateISO();
-    return displayCharges.filter((charge) => activeTenancyIds.has(charge.tenancy_id) && charge.due_date <= today);
-  }, [activeTenancyIds, displayCharges]);
+    const threshold = addDaysISO(localDateISO(), openDaysBefore);
+    return displayCharges.filter((charge) => activeTenancyIds.has(charge.tenancy_id) && charge.due_date <= threshold);
+  }, [activeTenancyIds, displayCharges, openDaysBefore]);
   const overviewCharges = useMemo(() => {
     const currentRentIds = new Set(
       activeTenancies

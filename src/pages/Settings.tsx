@@ -7,10 +7,11 @@ import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
-  const { emailReminders, loading, saving, save } = useNotificationSettings();
+  const { emailReminders, openDaysBefore, reminderOffsetDays, loading, saving, save } = useNotificationSettings();
 
   if (authLoading) {
     return (
@@ -23,11 +24,16 @@ const Settings = () => {
 
   const onToggle = async (value: boolean) => {
     try {
-      await save(value);
+      await save({ email_reminders: value });
       toast.success(value ? 'תקבלו תזכורות תשלום במייל.' : 'ביטלת קבלת תזכורות תשלום במייל.');
     } catch {
       toast.error('לא הצלחנו לשמור את ההגדרה. נסו שוב.');
     }
+  };
+
+  const onNumber = async (field: 'open_days_before' | 'reminder_offset_days', raw: string) => {
+    const n = Math.max(0, Math.min(30, Math.round(Number(raw) || 0)));
+    try { await save({ [field]: n }); } catch { toast.error('לא הצלחנו לשמור את ההגדרה. נסו שוב.'); }
   };
 
   return (
@@ -61,6 +67,39 @@ const Settings = () => {
               onCheckedChange={onToggle}
               aria-label="קבלת תזכורות תשלום במייל"
             />
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4 rounded-2xl">
+          <CardContent className="space-y-5 p-5">
+            <div>
+              <h2 className="font-display text-lg">תזמון</h2>
+              <p className="text-sm text-muted-foreground">שליטה על מתי חיובים נפתחים לסימון ומתי נשלחת התזכורת.</p>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="open-days" className="text-base">פתיחת חיוב לסימון</Label>
+                <p className="mt-1 text-sm text-muted-foreground">כמה ימים לפני מועד התשלום החיוב מופיע כ„לתשלום”.</p>
+              </div>
+              <Input
+                key={`open-${loading}`}
+                id="open-days" type="number" min={0} max={30} className="w-20 text-center ltr"
+                defaultValue={openDaysBefore} disabled={loading || saving}
+                onBlur={(e) => onNumber('open_days_before', e.target.value)}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="reminder-offset" className="text-base">שליחת תזכורת</Label>
+                <p className="mt-1 text-sm text-muted-foreground">כמה ימים אחרי מועד התשלום נשלחת התזכורת (0 = ביום התשלום).</p>
+              </div>
+              <Input
+                key={`offset-${loading}`}
+                id="reminder-offset" type="number" min={0} max={30} className="w-20 text-center ltr"
+                defaultValue={reminderOffsetDays} disabled={loading || saving}
+                onBlur={(e) => onNumber('reminder_offset_days', e.target.value)}
+              />
+            </div>
           </CardContent>
         </Card>
       </main>
