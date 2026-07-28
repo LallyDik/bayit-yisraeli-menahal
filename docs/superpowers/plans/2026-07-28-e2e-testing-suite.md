@@ -324,7 +324,7 @@ setup('authenticate', async ({ page }) => {
 
   await page.goto('/');
   await page.getByLabel('כתובת מייל').fill(TEST_USER.email);
-  await page.getByLabel('סיסמה').fill(TEST_USER.password);
+  await page.getByLabel('סיסמה', { exact: true }).fill(TEST_USER.password);
   await page.getByRole('button', { name: 'התחבר', exact: true }).click();
 
   // The signed-in shell renders the main tabs only for an authenticated user.
@@ -651,7 +651,7 @@ const PASSWORD = process.env.E2E_USER_PASSWORD!;
 async function signIn(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('כתובת מייל').fill(EMAIL);
-  await page.getByLabel('סיסמה').fill(PASSWORD);
+  await page.getByLabel('סיסמה', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'התחבר', exact: true }).click();
 }
 
