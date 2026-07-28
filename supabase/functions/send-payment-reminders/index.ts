@@ -146,18 +146,31 @@ Deno.serve(async (req) => {
       await supabase.from('notification_settings')
         .upsert({ owner_id: ownerId }, { onConflict: 'owner_id', ignoreDuplicates: true });
       const { data: prefs } = await supabase.from('notification_settings')
-        .select('email_reminders, unsubscribe_token').eq('owner_id', ownerId).maybeSingle();
+        .select('email_reminders, unsubscribe_token, reminder_offset_days').eq('owner_id', ownerId).maybeSingle();
       if (prefs && prefs.email_reminders === false) {
         results.push({ ownerId, to, sent: false, reason: 'unsubscribed' });
         continue;
       }
       const unsubscribeUrl = `${UNSUB_URL}?token=${prefs?.unsubscribe_token ?? ''}`;
 
+      // Hold this owner's reminders until reminder_offset_days past due. The view
+      // already returns only due_date <= today, so this only DELAYS, never sends
+      // early.
+      const offset = prefs?.reminder_offset_days ?? 0;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - offset);
+      const cutoffISO = cutoff.toISOString().slice(0, 10);
+      const dueRows = offset > 0 ? ownerRows.filter((r) => r.due_date <= cutoffISO) : ownerRows;
+      if (dueRows.length === 0) {
+        results.push({ ownerId, to, sent: false, reason: 'not yet due (offset)' });
+        continue;
+      }
+
       // A fresh single-use token per charge, so each "mark paid" link works once
       // and stops working after two weeks even if the mail is forwarded.
       const expiresAt = new Date(Date.now() + TOKEN_TTL_DAYS * 86_400_000).toISOString();
       const rowsWithTokens: Row[] = [];
-      for (const row of ownerRows) {
+      for (const row of dueRows) {
         const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '');
         const { error: tokenError } = await supabase.from('payment_action_tokens')
           .insert({ token, charge_id: row.charge_id, owner_id: ownerId, expires_at: expiresAt });
