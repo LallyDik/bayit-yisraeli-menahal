@@ -41,7 +41,8 @@ export async function signInTestUser(): Promise<{ client: SupabaseClient; userId
   if (!data.user) throw new Error('No user session after sign-in');
 
   // Keep onboarding complete so the first-login guide never opens mid-test.
-  await client.auth.updateUser({ data: { onboarding_version: 1 } });
+  const { error: onboardingError } = await client.auth.updateUser({ data: { onboarding_version: 1 } });
+  if (onboardingError) throw new Error(`updateUser (onboarding) failed: ${onboardingError.message}`);
 
   cachedClient = client;
   cachedUserId = data.user.id;
