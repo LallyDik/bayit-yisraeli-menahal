@@ -500,9 +500,30 @@ export function PaymentsPage({
     : charges;
   const historyTenancies = focusedTenancy ? [focusedTenancy] : allTenancies;
 
-  const dueCharges = useMemo(() => {
+  const { dueCharges, pastDebt } = useMemo(() => {
     const today = localDateISO();
-    return charges.filter((charge) => visibleTenancyIds.has(charge.tenancy_id) && charge.due_date <= today);
+    const due = charges.filter((charge) => visibleTenancyIds.has(charge.tenancy_id) && charge.due_date <= today);
+    // The summary reflects the CURRENT period only: keep the latest-due charge
+    // of each recurring series per tenant (rent by payment_type, extras by their
+    // term id), so the totals show this month - not the whole accumulated
+    // history. Full history stays available under "היסטוריה וחובות".
+    const seriesKey = (charge: ChargeWithPaid) => {
+      const term = charge.period_key?.match(/^term:([^:]+):/);
+      return `${charge.tenancy_id}|${term ? `term:${term[1]}` : charge.payment_type}`;
+    };
+    const current = new Map<string, ChargeWithPaid>();
+    for (const charge of due) {
+      const key = seriesKey(charge);
+      const existing = current.get(key);
+      if (!existing || charge.due_date > existing.due_date) current.set(key, charge);
+    }
+    const currentIds = new Set([...current.values()].map((charge) => charge.id));
+    // Debt carried from earlier periods: due charges that aren't the current one
+    // in their series and still have an open balance.
+    const debt = due
+      .filter((charge) => !currentIds.has(charge.id))
+      .reduce((sum, charge) => sum + Math.max(Number(charge.amount_due) - Number(charge.paid_amount), 0), 0);
+    return { dueCharges: [...current.values()], pastDebt: debt };
   }, [charges, visibleTenancyIds]);
   const totalDue = dueCharges.reduce((sum, charge) => sum + Number(charge.amount_due), 0);
   const totalPaid = dueCharges.reduce((sum, charge) => sum + Number(charge.paid_amount), 0);
@@ -531,10 +552,16 @@ export function PaymentsPage({
           </div>
           <div className="flex flex-col gap-3 sm:items-end">
             <div className="grid grid-cols-3 gap-2 rounded-2xl bg-muted p-2 text-center">
-              <div className="px-3 py-2"><p className="text-xs text-muted-foreground">לתשלום</p><p className="nums font-bold">₪{totalDue.toLocaleString()}</p></div>
+              <div className="px-3 py-2"><p className="text-xs text-muted-foreground">לתשלום החודש</p><p className="nums font-bold">₪{totalDue.toLocaleString()}</p></div>
               <div className="px-3 py-2"><p className="text-xs text-muted-foreground">שולם</p><p className="nums font-bold">₪{totalPaid.toLocaleString()}</p></div>
               <div className="px-3 py-2"><p className="text-xs text-muted-foreground">נשאר</p><p className="nums font-bold">₪{Math.max(totalDue - totalPaid, 0).toLocaleString()}</p></div>
             </div>
+            {pastDebt > 0 && (
+              <div className="flex items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                <span>חוב מחודשים קודמים</span>
+                <span className="nums font-bold">₪{pastDebt.toLocaleString()}</span>
+              </div>
+            )}
             <Button type="button" variant="outline" className="rounded-full" onClick={() => setHistoryOpen(true)}>
               <History className="h-4 w-4" />
               היסטוריה וחובות
