@@ -2,7 +2,7 @@ import { test as base } from '@playwright/test';
 import { resetTestUserData } from './supabase-test-user';
 
 // Every test that imports this `test` starts from a clean backend for the
-// test user, so tests are order-independent against the shared branch.
+// test user, so tests are order-independent against the shared project.
 export const test = base.extend<{ cleanData: void }>({
   cleanData: [
     async ({}, use) => {
