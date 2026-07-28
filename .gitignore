@@ -32,3 +32,9 @@ dist-ssr
 
 # bun lockfile — this project builds with npm (package-lock.json)
 bun.lockb
+
+# E2E (Playwright)
+.env.e2e
+e2e/.auth/
+playwright-report/
+test-results/
