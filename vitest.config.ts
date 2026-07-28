@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     testTimeout: 20000,
+    // Network-bound setup hooks (signInAs creates/signs in a Supabase user) can
+    // exceed the 10s default under auth latency/throttling; give them headroom.
+    hookTimeout: 30000,
     fileParallelism: false,
   },
 });
