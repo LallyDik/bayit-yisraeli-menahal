@@ -13,9 +13,11 @@
 - **Runner separation:** vitest owns `tests/**/*.test.ts`; Playwright owns `e2e/**/*.spec.ts` and `e2e/auth.setup.ts`. Never let them overlap.
 - **Dev server:** the app serves on `http://localhost:8080` (`vite.config.ts` port 8080). E2E uses `npm run dev:e2e` = `vite --mode e2e`, which loads `.env.e2e`.
 - **Env precedence:** Vite loads `.env` < `.env.local` < `.env.e2e`, so `.env.e2e` wins for `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` at build time.
-- **Secrets:** `SUPABASE_SERVICE_ROLE_KEY` lives only in `.env.e2e` (gitignored) and is read only in the Node/Playwright process — never prefixed `VITE_`, never shipped to the browser.
+- **Backend (no-cost, existing project):** the suite runs against the **existing** Supabase project (no separate branch — the user's "no costs" decision), reusing the same URL + anon key already in `.env.local`. Isolation is by a **dedicated test user**: RLS confines every read, write, and cleanup to that user's `owner_id`, exactly like the existing integration tests (`tests/helpers/auth.ts`). This never touches real users' data.
+- **No service-role key.** The test user is created and signed in through the **anon** client (`signUp`-then-`signIn`, as `tests/helpers/auth.ts` already does — this project has email confirmation disabled), and it cleans up *its own* rows under RLS. No `SUPABASE_SERVICE_ROLE_KEY` anywhere — safer against a production database, since RLS makes it impossible for a cleanup bug to reach another user's data.
 - **Determinism:** `workers: 1`, `fullyParallel: false`. Every mutating test resets the test user's data first (via the `test` fixture from `e2e/support/fixtures.ts`).
-- **Test user:** created via service-role with `email_confirm: true` and `user_metadata.onboarding_version: 1` so email confirmation and the first-login guide never block tests.
+- **Test user:** onboarding is skipped by `client.auth.updateUser({ data: { onboarding_version: 1 } })` right after sign-in, so the first-login guide never opens mid-test. (`onboarding_version` matches `CURRENT_ONBOARDING_VERSION` in `src/utils/onboarding.ts`.)
+- **Browser:** standard Playwright bundled Chromium via `npx playwright install chromium`. This requires the network filter (netfree) to allow `cdn.playwright.dev`; the user is allowlisting it. (Fallback if that ever fails: `channel: 'chrome'` in the config uses the system-installed Chrome with no download.)
 - **Selectors (in priority order):** `getByRole` with the Hebrew accessible name → `getByLabel` (regex for labels with a trailing `*`/`- אופציונלי`) → `getByText` → existing `data-guide` hooks. Add `data-testid` only if nothing else is unambiguous.
 - **Language:** the app is Hebrew RTL. All literal strings in selectors are copied verbatim from the components.
 - **These are acceptance tests over existing, working app code.** There is no app feature to implement — each spec should go green on first correct run. A red result means a selector/test bug to fix (or, occasionally, a real app bug to report to the user), never "write the app code."
@@ -66,13 +68,13 @@ test-results/
 - [ ] **Step 4: Create `.env.e2e.example`**
 
 ```
-# Dedicated Supabase TEST BRANCH credentials for Playwright E2E.
-# Copy this file to .env.e2e (gitignored) and fill from the branch you create in Task 2.
-# VITE_ vars are read by the browser app (via Vite); the service-role key is read
-# only by the Node test process and must never be exposed to the browser.
+# Credentials for Playwright E2E. Copy this file to .env.e2e (gitignored) and
+# fill in Task 2. The suite runs against the EXISTING Supabase project with a
+# dedicated, isolated test user — no separate branch, no service-role key.
+# VITE_ vars are read by the browser app (via Vite); the test-user creds are
+# read only by the Node test process (auth.setup and the specs).
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
 E2E_USER_EMAIL=e2e@example.com
 E2E_USER_PASSWORD=e2e-strong-password-change-me
 ```
@@ -136,146 +138,148 @@ git commit -m "test(e2e): scaffold Playwright config and scripts"
 
 ---
 
-### Task 2: Create the Supabase test branch and fill `.env.e2e`
+### Task 2: Configure `.env.e2e` for the existing project
 
-This is an operational task (no committed code — `.env.e2e` is gitignored). It produces the isolated backend the whole suite runs against.
+Operational task (no committed code — `.env.e2e` is gitignored). No Supabase branch is created (the no-cost decision): the suite runs against the existing project with an isolated test user.
 
 **Files:**
 - Create (local, gitignored): `.env.e2e`
 
 **Interfaces:**
-- Produces: a reachable Supabase branch with the app schema, and a filled `.env.e2e` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`.
+- Produces: a filled `.env.e2e` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (copied from the existing `.env.local`), and `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` (a throwaway test account, created on first run in Task 3).
 
-- [ ] **Step 1: Create a persistent test branch**
+- [ ] **Step 1: Copy the existing project's URL and anon key**
 
-Use the Supabase MCP `create_branch` tool (branch name e.g. `e2e`), or the Supabase dashboard (Branches → new branch). The branch inherits the parent project's migrations, so it has the same schema. Confirm it is ready with the MCP `list_branches` tool (status `MIGRATIONS_PASSED`/active) before continuing.
+Read `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from the existing `.env.local` (the running app already uses them). The anon key is public-safe by design (see the comment in `.env.example`). Do NOT create a Supabase branch and do NOT obtain a service-role key.
 
-- [ ] **Step 2: Collect the branch credentials**
-
-From the branch, obtain its project URL, its `anon` (publishable) key, and its `service_role` key (dashboard → Project Settings → API, or the MCP `get_project_url` / `get_publishable_keys` tools; the service-role key comes from the branch's API settings).
-
-- [ ] **Step 3: Fill `.env.e2e`**
+- [ ] **Step 2: Fill `.env.e2e`**
 
 Copy `.env.e2e.example` to `.env.e2e` and set:
-- `VITE_SUPABASE_URL` → branch URL
-- `VITE_SUPABASE_ANON_KEY` → branch anon key
-- `SUPABASE_SERVICE_ROLE_KEY` → branch service-role key
-- `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` → a fixed test account (any values; the account is created in Task 3).
+- `VITE_SUPABASE_URL` → the value from `.env.local`
+- `VITE_SUPABASE_ANON_KEY` → the value from `.env.local`
+- `E2E_USER_EMAIL` → a dedicated test address, e.g. `e2e-tests@bayit-yisraeli.local`
+- `E2E_USER_PASSWORD` → any strong throwaway password
 
-- [ ] **Step 4: Verify connectivity**
+This account is separate from every real user; RLS keeps its data isolated, and Task 3 only ever deletes rows owned by it.
+
+- [ ] **Step 3: Verify connectivity**
 
 Run: `npm run dev:e2e`
 Expected: Vite starts on `http://localhost:8080` with no "Missing VITE_SUPABASE_URL…" error. Open the URL in a browser: the landing page renders. Stop the server (Ctrl-C). No commit (nothing tracked changed).
 
 ---
 
-### Task 3: Supabase admin support module + authentication setup
+### Task 3: Supabase test-user support module + authentication setup
 
 **Files:**
-- Create: `e2e/support/supabase-admin.ts`
+- Create: `e2e/support/supabase-test-user.ts`
 - Create: `e2e/auth.setup.ts`
 - Test: running the `setup` project is the verification.
 
 **Interfaces:**
 - Produces:
   - `TEST_USER: { email: string; password: string }`
-  - `ensureTestUser(): Promise<string>` — returns the test user's id, creating it (email-confirmed, onboarding done) if absent.
-  - `resetTestUserData(): Promise<void>` — deletes all of the test user's rows across app tables in FK-safe order.
-  - `seedUnit(name: string): Promise<string>` — inserts a bare unit owned by the test user; returns its id.
-  - `seedTenant(name: string): Promise<string>` — inserts a bare tenant owned by the test user; returns its id.
+  - `signInTestUser(): Promise<{ client: SupabaseClient; userId: string }>` — signs the test user in (creating it on first run), marks onboarding done, caches and returns the authed client + user id.
+  - `resetTestUserData(): Promise<void>` — deletes the test user's own rows across app tables (via the authed client under RLS) in FK-safe order.
+  - `seedUnit(name: string): Promise<string>` — inserts a bare unit (owner defaults to the test user); returns its id.
+  - `seedTenant(name: string): Promise<string>` — inserts a bare tenant; returns its id.
   - `seedActiveTenancy(opts): Promise<{ unitId: string; tenantId: string; tenancyId: string }>` — inserts unit + tenant + active tenancy.
   - `e2e/.auth/user.json` — saved `storageState` for signed-in specs.
 
-- [ ] **Step 1: Write `e2e/support/supabase-admin.ts`**
+The approach mirrors `tests/helpers/auth.ts`: no service-role — the test user creates and cleans up its own data through the anon client under RLS. `owner_id` defaults to `auth.uid()` on insert, so seeds never set it.
+
+- [ ] **Step 1: Write `e2e/support/supabase-test-user.ts`**
 
 ```ts
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const url = process.env.VITE_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
 const email = process.env.E2E_USER_EMAIL;
 const password = process.env.E2E_USER_PASSWORD;
 
-if (!url || !serviceKey || !email || !password) {
+if (!url || !anonKey || !email || !password) {
   throw new Error(
-    'Missing E2E env. Set VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ' +
+    'Missing E2E env. Set VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, ' +
       'E2E_USER_EMAIL and E2E_USER_PASSWORD in .env.e2e (see .env.e2e.example).',
   );
 }
 
 export const TEST_USER = { email, password };
 
-const admin: SupabaseClient = createClient(url, serviceKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-
+let cachedClient: SupabaseClient | null = null;
 let cachedUserId: string | null = null;
 
-/** Ensures the fixed test user exists (email-confirmed, onboarding done). Returns its id. */
-export async function ensureTestUser(): Promise<string> {
-  if (cachedUserId) return cachedUserId;
+/**
+ * Signs the fixed test user in — creating it on first run, exactly like
+ * tests/helpers/auth.ts — marks onboarding complete, and caches the authed
+ * client + user id. Safe to call repeatedly.
+ */
+export async function signInTestUser(): Promise<{ client: SupabaseClient; userId: string }> {
+  if (cachedClient && cachedUserId) return { client: cachedClient, userId: cachedUserId };
 
-  const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  if (listErr) throw new Error(`listUsers failed: ${listErr.message}`);
+  const client = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
-  const existing = list.users.find((u) => u.email === email);
-  if (existing) {
-    // Keep onboarding marked complete so the first-login guide never opens mid-test.
-    await admin.auth.admin.updateUserById(existing.id, {
-      user_metadata: { ...existing.user_metadata, onboarding_version: 1 },
-    });
-    cachedUserId = existing.id;
-    return existing.id;
+  let { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) {
+    const { error: signUpError } = await client.auth.signUp({ email, password });
+    if (signUpError) throw new Error(`signUp failed: ${signUpError.message}`);
+    ({ error } = await client.auth.signInWithPassword({ email, password }));
+    if (error) throw new Error(`signIn after signUp failed: ${error.message}`);
   }
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { onboarding_version: 1 },
-  });
-  if (error || !data.user) throw new Error(`createUser failed: ${error?.message ?? 'no user'}`);
+  const { data } = await client.auth.getUser();
+  if (!data.user) throw new Error('No user session after sign-in');
+
+  // Keep onboarding complete so the first-login guide never opens mid-test.
+  await client.auth.updateUser({ data: { onboarding_version: 1 } });
+
+  cachedClient = client;
   cachedUserId = data.user.id;
-  return data.user.id;
+  return { client, userId: data.user.id };
 }
 
-// Children before parents. Every app table is owner-scoped by `owner_id`;
-// service-role bypasses RLS so these deletes clear the test user's data only.
+// Children before parents. RLS + the explicit owner_id filter confine deletes
+// to the test user's rows. A table the user has no DELETE policy for is cleared
+// by the tenancy cascade (FK `on delete cascade`) when the tenancy row goes; the
+// explicit delete on it is then a harmless 0-row no-op (RLS filters, no error).
+// notification_settings has no owner DELETE policy and does not affect the
+// tested flows, so it is intentionally left alone.
 const CLEANUP_TABLES = [
   'payment_allocations',
-  'payment_action_tokens',
   'payments',
   'charges',
+  'tenancy_payment_terms',
   'billing_schedule_occurrences',
   'tenancy_billing_settings',
-  'tenancy_payment_terms',
   'meter_readings',
   'attachments',
   'tenancies',
   'units',
   'tenants',
-  'notification_settings',
 ] as const;
 
-/** Deletes all of the test user's rows so each test starts from a clean baseline. */
+/** Deletes the test user's own rows so each test starts from a clean baseline. */
 export async function resetTestUserData(): Promise<void> {
-  const userId = await ensureTestUser();
+  const { client, userId } = await signInTestUser();
   for (const table of CLEANUP_TABLES) {
-    const { error } = await admin.from(table).delete().eq('owner_id', userId);
+    const { error } = await client.from(table).delete().eq('owner_id', userId);
     if (error) throw new Error(`reset ${table} failed: ${error.message}`);
   }
 }
 
 export async function seedUnit(name: string): Promise<string> {
-  const userId = await ensureTestUser();
-  const { data, error } = await admin.from('units').insert({ name, owner_id: userId }).select('id').single();
+  const { client } = await signInTestUser();
+  const { data, error } = await client.from('units').insert({ name }).select('id').single();
   if (error || !data) throw new Error(`seedUnit failed: ${error?.message ?? 'no row'}`);
   return data.id as string;
 }
 
 export async function seedTenant(name: string): Promise<string> {
-  const userId = await ensureTestUser();
-  const { data, error } = await admin.from('tenants').insert({ name, owner_id: userId }).select('id').single();
+  const { client } = await signInTestUser();
+  const { data, error } = await client.from('tenants').insert({ name }).select('id').single();
   if (error || !data) throw new Error(`seedTenant failed: ${error?.message ?? 'no row'}`);
   return data.id as string;
 }
@@ -286,13 +290,12 @@ export async function seedActiveTenancy(opts: {
   rent: number;
   method: 'cash' | 'check' | 'transfer' | null;
 }): Promise<{ unitId: string; tenantId: string; tenancyId: string }> {
-  const userId = await ensureTestUser();
+  const { client } = await signInTestUser();
   const unitId = await seedUnit(opts.unitName);
   const tenantId = await seedTenant(opts.tenantName);
-  const { data, error } = await admin
+  const { data, error } = await client
     .from('tenancies')
     .insert({
-      owner_id: userId,
       unit_id: unitId,
       tenant_id: tenantId,
       monthly_rent: opts.rent,
@@ -310,12 +313,13 @@ export async function seedActiveTenancy(opts: {
 
 ```ts
 import { test as setup, expect } from '@playwright/test';
-import { ensureTestUser, resetTestUserData, TEST_USER } from './support/supabase-admin';
+import { signInTestUser, resetTestUserData, TEST_USER } from './support/supabase-test-user';
 
 const AUTH_FILE = 'e2e/.auth/user.json';
 
 setup('authenticate', async ({ page }) => {
-  await ensureTestUser();
+  // Ensure the test user exists (created on first run) and start from a clean slate.
+  await signInTestUser();
   await resetTestUserData();
 
   await page.goto('/');
@@ -333,13 +337,13 @@ setup('authenticate', async ({ page }) => {
 - [ ] **Step 3: Run the setup project**
 
 Run: `npx playwright test --project=setup`
-Expected: PASS. `e2e/.auth/user.json` is created. This proves branch connectivity, test-user creation (with onboarding skipped), UI login, and storageState capture all work.
+Expected: PASS. `e2e/.auth/user.json` is created. This proves connectivity to the existing project, test-user sign-up/sign-in (with onboarding skipped), UI login, and storageState capture all work. If sign-in fails with "Email not confirmed", the project has email confirmation enabled — stop and report to the human (the design assumes it is disabled, as the existing integration tests require).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add e2e/support/supabase-admin.ts e2e/auth.setup.ts
-git commit -m "test(e2e): supabase admin helpers and auth setup"
+git add e2e/support/supabase-test-user.ts e2e/auth.setup.ts
+git commit -m "test(e2e): supabase test-user helpers and auth setup"
 ```
 
 ---
@@ -358,7 +362,7 @@ git commit -m "test(e2e): supabase admin helpers and auth setup"
 
 ```ts
 import { test as base } from '@playwright/test';
-import { resetTestUserData } from './supabase-admin';
+import { resetTestUserData } from './supabase-test-user';
 
 // Every test that imports this `test` starts from a clean backend for the
 // test user, so tests are order-independent against the shared branch.
@@ -386,7 +390,7 @@ export function uniqueName(prefix: string): string {
 
 ```ts
 import { test, expect, uniqueName } from '../support/fixtures';
-import { seedUnit } from '../support/supabase-admin';
+import { seedUnit } from '../support/supabase-test-user';
 
 test.describe('יחידות', () => {
   test('מצב ריק ואז הוספת יחידה דרך הטופס', async ({ page }) => {
@@ -470,7 +474,7 @@ git commit -m "test(e2e): units flow (empty state, add, edit, archive, search)"
 
 ```ts
 import { test, expect, uniqueName } from '../support/fixtures';
-import { seedUnit, seedTenant } from '../support/supabase-admin';
+import { seedUnit, seedTenant } from '../support/supabase-test-user';
 
 test.describe('שוכרים', () => {
   test('הוספת שוכר עם שיוך ליחידה, שכר דירה ואמצעי תשלום', async ({ page }) => {
@@ -543,7 +547,7 @@ Notes on the flow (verified against `src/components/PaymentsPage.tsx`):
 
 ```ts
 import { test, expect, uniqueName } from '../support/fixtures';
-import { seedActiveTenancy } from '../support/supabase-admin';
+import { seedActiveTenancy } from '../support/supabase-test-user';
 
 test.describe('תשלומים', () => {
   test('סימון שכר דירה כשולם — תווית לפי אמצעי תשלום (העברה)', async ({ page }) => {
@@ -705,16 +709,14 @@ Expected: the `setup` project runs first, then all specs (auth, payments, tenant
 ````markdown
 # E2E tests (Playwright)
 
-Browser end-to-end tests that drive the real app against a dedicated Supabase branch.
+Browser end-to-end tests that drive the real app against the existing Supabase project, isolated to a dedicated test user.
 
 ## One-time setup
 
-1. Create a Supabase **branch** for tests (Supabase dashboard → Branches, or the MCP `create_branch`).
-2. Copy `.env.e2e.example` → `.env.e2e` (gitignored) and fill:
-   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — the branch's URL and anon key
-   - `SUPABASE_SERVICE_ROLE_KEY` — the branch's service-role key (Node-side only; never shipped to the browser)
-   - `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` — the fixed test account (auto-created on first run)
-3. `npx playwright install chromium`
+1. Copy `.env.e2e.example` → `.env.e2e` (gitignored) and fill:
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — copy from `.env.local` (the existing project; the anon key is public-safe)
+   - `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` — a dedicated throwaway test account (auto-created on first run)
+2. `npx playwright install chromium` (needs the network filter to allow `cdn.playwright.dev`)
 
 ## Running
 
@@ -727,10 +729,10 @@ npm run test:e2e:report  # open the last HTML report
 
 ## How it works
 
-- `vite --mode e2e` serves the app on :8080 reading `.env.e2e`, so the app talks to the branch.
+- `vite --mode e2e` serves the app on :8080 reading `.env.e2e`, so the app talks to the existing project.
 - The `setup` project (`e2e/auth.setup.ts`) creates/signs-in the test user once and saves `e2e/.auth/user.json`; specs reuse it.
-- `e2e/support/supabase-admin.ts` (service-role) creates the test user and resets its data before each mutating test.
-- Single worker, `fullyParallel: false`, for determinism against the shared branch.
+- `e2e/support/supabase-test-user.ts` (anon client, no service-role) signs the test user in and resets *its own* rows (RLS-scoped) before each mutating test.
+- Single worker, `fullyParallel: false`, for determinism against the shared backend.
 
 ## Coverage
 
@@ -759,8 +761,8 @@ git commit -m "docs(e2e): runbook for the Playwright suite"
 
 **1. Spec coverage** (against `2026-07-28-e2e-testing-suite-design.md`):
 - Tooling/config (Playwright, Chromium, config, no vitest overlap) → Task 1. ✔
-- Supabase branch backend + `.env.e2e` → Task 2. ✔
-- Auth reuse via `storageState` + service-role user ensure/reset → Task 3. ✔
+- Existing-project backend (no branch, no cost) + `.env.e2e` → Task 2. ✔
+- Auth reuse via `storageState` + anon test-user sign-in/reset (no service-role) → Task 3. ✔
 - File structure (`e2e/` with `support/`, `tests/`, `auth.setup.ts`, `.auth/`) → Tasks 1,3,4. ✔
 - Auth spec → Task 7. Units → Task 4. Tenants → Task 5. Payments (mark-paid) → Task 6. ✔
 - Selector strategy (role/label/text/`data-guide`) → applied in every spec. ✔
