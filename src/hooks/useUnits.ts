@@ -29,20 +29,20 @@ export const useUnits = () => {
 
   const create = useMutation({
     mutationFn: (input: Omit<UnitInsert, 'owner_id' | 'id'>) => createUnit(input),
-    onSuccess: () => { invalidate(); toast.success('היחידה נוספה'); },
+    onSuccess: () => { invalidate(); toast.success('הדירה נוספה'); },
     onError,
   });
 
   const update = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<UnitInsert> }) =>
       updateUnit(id, patch),
-    onSuccess: () => { invalidate(); toast.success('היחידה עודכנה'); },
+    onSuccess: () => { invalidate(); toast.success('הדירה עודכנה'); },
     onError,
   });
 
   const archive = useMutation({
     mutationFn: (id: string) => archiveUnit(id),
-    onSuccess: () => { invalidate(); toast.success('היחידה הועברה לארכיון'); },
+    onSuccess: () => { invalidate(); toast.success('הדירה הועברה לארכיון'); },
     onError,
   });
 

@@ -75,11 +75,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <Card className="p-8 text-center sm:p-12">
         <CardContent className="p-0">
           <Home className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
-          <h2 className="font-display text-2xl">ברוכים הבאים! מתחילים ביחידה הראשונה</h2>
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">צריך רק שם ליחידה. את שאר הפרטים אפשר להשלים אחר כך.</p>
+          <h2 className="font-display text-2xl">ברוכים הבאים! מתחילים בדירה הראשונה</h2>
+          <p className="mx-auto mt-2 max-w-md text-muted-foreground">צריך רק שם לדירה. את שאר הפרטים אפשר להשלים אחר כך.</p>
           <Button type="button" onClick={onAddUnit} className="mt-6 rounded-full" size="lg">
             <Plus className="h-5 w-5" />
-            הוספת יחידה
+            הוספת דירה
           </Button>
         </CardContent>
       </Card>
@@ -102,7 +102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/45"><Home className="h-7 w-7" /></span>
             <span>
               <span className="block font-display text-4xl nums">{units.length}</span>
-              <span className="block text-sm font-medium">יחידות</span>
+              <span className="block text-sm font-medium">דירות</span>
               <span className="mt-1 block text-sm text-foreground/65">{occupiedUnits} תפוסות · {vacantUnits} פנויות</span>
             </span>
           </div>
@@ -114,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span>
               <span className="block font-display text-4xl nums">{tenants.length}</span>
               <span className="block text-sm font-medium">שוכרים</span>
-              <span className="mt-1 block text-sm text-foreground/65">{assignedTenants} משויכים · {unassignedTenants} ללא יחידה</span>
+              <span className="mt-1 block text-sm text-foreground/65">{assignedTenants} משויכים · {unassignedTenants} ללא דירה</span>
             </span>
           </div>
         </button>
@@ -132,7 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </section>
 
       <div className="flex flex-wrap gap-3 rounded-[2rem] border bg-card p-4">
-        <Button type="button" onClick={onAddUnit} className="rounded-full" size="lg"><Plus className="h-5 w-5" />הוספת יחידה</Button>
+        <Button type="button" onClick={onAddUnit} className="rounded-full" size="lg"><Plus className="h-5 w-5" />הוספת דירה</Button>
         <Button type="button" onClick={onAddTenant} variant="outline" className="rounded-full" size="lg"><Plus className="h-5 w-5" />הוספת שוכר</Button>
       </div>
 
@@ -222,7 +222,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </section>
 
       <section aria-labelledby="units-status-title">
-        <h2 id="units-status-title" className="mb-4 text-2xl font-bold">מצב היחידות</h2>
+        <h2 id="units-status-title" className="mb-4 text-2xl font-bold">מצב הדירות</h2>
         <div className="space-y-2">
           {units.map((unit) => {
             const tenancy = activeByUnitId.get(unit.id);
@@ -244,7 +244,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {tenantsWithoutUnit.length > 0 && (
         <section aria-labelledby="unassigned-title">
-          <h2 id="unassigned-title" className="mb-4 text-2xl font-bold">שוכרים ללא יחידה</h2>
+          <h2 id="unassigned-title" className="mb-4 text-2xl font-bold">שוכרים ללא דירה</h2>
           <div className="space-y-2">
             {tenantsWithoutUnit.map((tenant) => (
               <button key={tenant.id} type="button" className="flex w-full items-center justify-between rounded-xl border bg-card p-4 text-start transition-colors hover:bg-accent/40" onClick={() => onEditTenant(tenant)}>
@@ -252,7 +252,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="block font-semibold">{tenant.name}</span>
                   {tenant.phone && <span className="block text-sm text-muted-foreground" dir="ltr">{tenant.phone}</span>}
                 </span>
-                <Badge variant="secondary">ללא יחידה</Badge>
+                <Badge variant="secondary">ללא דירה</Badge>
               </button>
             ))}
           </div>

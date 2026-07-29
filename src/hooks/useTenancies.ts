@@ -10,7 +10,7 @@ import type { TenancyInsert } from '@/types';
 function humanize(e: unknown): string {
   const msg = e instanceof Error ? e.message : '';
   if (msg.includes('one_active_tenancy_per_unit')) {
-    return 'ביחידה הזו כבר גר שוכר. סיים את תקופת השכירות הקיימת לפני שתשייך שוכר חדש.';
+    return 'בדירה הזו כבר גר שוכר. סיים את תקופת השכירות הקיימת לפני שתשייך שוכר חדש.';
   }
   return msg || 'הפעולה נכשלה';
 }
@@ -49,7 +49,7 @@ export const useTenancies = () => {
 
   const create = useMutation({
     mutationFn: (input: Omit<TenancyInsert, 'owner_id' | 'id'>) => createTenancy(input),
-    onSuccess: () => { invalidate(); toast.success('השוכר שויך ליחידה'); },
+    onSuccess: () => { invalidate(); toast.success('השוכר שויך לדירה'); },
     onError: (e) => toast.error(humanize(e)),
   });
 

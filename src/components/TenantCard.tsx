@@ -24,7 +24,7 @@ export const TenantCard: React.FC<TenantCardProps> = ({
         {tenant.name}
       </CardTitle>
       <Badge variant={unitName ? 'default' : 'secondary'}>
-        {unitName ?? 'ללא יחידה'}
+        {unitName ?? 'ללא דירה'}
       </Badge>
     </CardHeader>
     <CardContent className="space-y-3 p-5 pt-0">

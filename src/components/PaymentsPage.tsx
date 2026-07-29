@@ -277,7 +277,7 @@ function UtilityCard({
                             className={`h-11 rounded-xl pr-9 nums ${isFirstReading ? '' : 'bg-muted'}`}
                           />
                         </div>
-                        <p id={`${type}-${tenancy.id}-previous-help`} className="text-xs text-muted-foreground">{isFirstReading ? 'קריאת המונה בתחילת השכירות' : 'נשלף מהיסטוריית היחידה'}</p>
+                        <p id={`${type}-${tenancy.id}-previous-help`} className="text-xs text-muted-foreground">{isFirstReading ? 'קריאת המונה בתחילת השכירות' : 'נשלף מהיסטוריית הדירה'}</p>
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor={`${type}-${tenancy.id}-reading`}>הזיני מונה נוכחי</Label>
@@ -548,7 +548,7 @@ export function PaymentsPage({
               <ReceiptText className="h-6 w-6" />
             </div>
             <h2 className="text-3xl font-display">כל התשלומים במקום אחד</h2>
-            <p className="mt-1 text-muted-foreground">שכירות, מונים וחיובים קבועים - לפי יחידה ושוכר.</p>
+            <p className="mt-1 text-muted-foreground">שכירות, מונים וחיובים קבועים - לפי דירה ושוכר.</p>
           </div>
           <div className="flex flex-col gap-3 sm:items-end">
             <div className="grid grid-cols-3 gap-2 rounded-2xl bg-muted p-2 text-center">
@@ -588,7 +588,7 @@ export function PaymentsPage({
           <CardContent className="p-8 text-center">
             <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground" aria-hidden="true" />
             <h3 className="font-display text-lg">כדי לנהל תשלומים צריך שכירות פעילה</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">הוסיפו שוכר ושייכו אותו ליחידה. מסך התשלומים ייפתח עבורו אוטומטית.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">הוסיפו שוכר ושייכו אותו לדירה. מסך התשלומים ייפתח עבורו אוטומטית.</p>
             <Button type="button" className="mt-5 rounded-full" onClick={onAddTenant}><Plus className="h-4 w-4" />הוספת שוכר</Button>
           </CardContent>
         </Card>

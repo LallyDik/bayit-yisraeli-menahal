@@ -47,9 +47,9 @@ const STEPS: GuideStep[] = [
     icon: Sparkles,
   },
   {
-    eyebrow: '1 · יחידות',
+    eyebrow: '1 · דירות',
     title: 'כאן מוסיפים את הנכס',
-    description: 'לחיצה על „הוספת יחידה” פותחת טופס קצר. שם היחידה הוא השדה היחיד שחייבים למלא; את שאר הפרטים אפשר להשלים בהמשך.',
+    description: 'לחיצה על „הוספת דירה” פותחת טופס קצר. שם הדירה הוא השדה היחיד שחייבים למלא; את שאר הפרטים אפשר להשלים בהמשך.',
     icon: Home,
     selectors: ['[data-guide="add-unit"]', '[data-guide="units-tab"]'],
     view: 'units',
@@ -57,8 +57,8 @@ const STEPS: GuideStep[] = [
   },
   {
     eyebrow: '2 · שוכרים',
-    title: 'מכאן מוסיפים שוכר ומשייכים ליחידה',
-    description: 'בטופס השוכר בוחרים את היחידה, שכר הדירה שסוכם ותאריך הכניסה. אפשר גם לשמור שוכר ללא יחידה ולשייך אותו מאוחר יותר.',
+    title: 'מכאן מוסיפים שוכר ומשייכים לדירה',
+    description: 'בטופס השוכר בוחרים את הדירה, שכר הדירה שסוכם ותאריך הכניסה. אפשר גם לשמור שוכר ללא דירה ולשייך אותו מאוחר יותר.',
     icon: UserRound,
     selectors: ['[data-guide="add-tenant"]', '[data-guide="tenants-tab"]'],
     view: 'tenants',
@@ -135,7 +135,7 @@ const STEPS: GuideStep[] = [
     icon: LayoutDashboard,
     selectors: ['[data-guide="overview-tab"]'],
     view: 'overview',
-    example: 'דוגמה: 3 יחידות · 2 תפוסות · חיוב פתוח אחד בסך ₪650',
+    example: 'דוגמה: 3 דירות · 2 תפוסות · חיוב פתוח אחד בסך ₪650',
   },
   {
     eyebrow: 'זה הכול',
@@ -460,7 +460,7 @@ export function FirstLoginGuide({
           <div className="bg-background px-5 py-5 sm:px-8 sm:py-6">
             <ol className="flex items-center justify-center gap-2 rounded-2xl border bg-card p-4" aria-label="סדר העבודה במערכת">
               {[
-                { icon: Home, label: 'יחידה' },
+                { icon: Home, label: 'דירה' },
                 { icon: UserRound, label: 'שוכר' },
                 { icon: ReceiptText, label: 'תשלום' },
               ].map((item, index) => (

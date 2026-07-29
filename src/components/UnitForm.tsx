@@ -39,7 +39,7 @@ interface UnitFormProps {
 export const UnitForm: React.FC<UnitFormProps> = ({
   onSubmit,
   initialData = {},
-  submitLabel = 'הוסף יחידה',
+  submitLabel = 'הוסף דירה',
   isSubmitting = false,
 }) => {
   const [name, setName] = useState(initialData.name ?? '');
@@ -81,19 +81,19 @@ export const UnitForm: React.FC<UnitFormProps> = ({
           <Plus className="w-6 h-6" />
           {submitLabel}
         </CardTitle>
-        <CardDescription className="text-foreground/70">שם היחידה מספיק כדי להתחיל. את כל השאר אפשר להשלים גם בהמשך.</CardDescription>
+        <CardDescription className="text-foreground/70">שם הדירה מספיק כדי להתחיל. את כל השאר אפשר להשלים גם בהמשך.</CardDescription>
       </CardHeader>
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="unit-name" className="text-lg font-medium">שם היחידה <span className="text-destructive" aria-hidden="true">*</span></Label>
+            <Label htmlFor="unit-name" className="text-lg font-medium">שם הדירה <span className="text-destructive" aria-hidden="true">*</span></Label>
             <Input
               id="unit-name" value={name} required autoFocus className="text-lg p-3"
               onChange={(e) => setName(e.target.value)}
               placeholder="לדוגמה: דירה 3, קומה ב'"
             />
             <p className="text-sm text-muted-foreground">
-              זה כל מה שצריך כדי לפתוח יחידה. אפשר להשלים את השאר מתי שתרצה.
+              זה כל מה שצריך כדי לפתוח דירה. אפשר להשלים את השאר מתי שתרצה.
             </p>
           </div>
 

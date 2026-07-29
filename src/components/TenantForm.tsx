@@ -89,7 +89,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
       return;
     }
     if (hasUnit && !startDate) {
-      setError('יש לבחור תאריך כניסה ליחידה.');
+      setError('יש לבחור תאריך כניסה לדירה.');
       return;
     }
     // A date field accepts a four-digit year, so a slip on the keyboard can save
@@ -122,7 +122,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
           <Plus className="w-6 h-6" />
           {submitLabel}
         </CardTitle>
-        <CardDescription className="text-foreground/70">שומרים פרטי קשר ומשייכים ליחידה עכשיו או בהמשך.</CardDescription>
+        <CardDescription className="text-foreground/70">שומרים פרטי קשר ומשייכים לדירה עכשיו או בהמשך.</CardDescription>
       </CardHeader>
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -133,16 +133,16 @@ export const TenantForm: React.FC<TenantFormProps> = ({
               onChange={(e) => setName(e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
-              זה כל מה שצריך כדי להוסיף שוכר. אפשר לשייך אותו ליחידה עכשיו או מאוחר יותר.
+              זה כל מה שצריך כדי להוסיף שוכר. אפשר לשייך אותו לדירה עכשיו או מאוחר יותר.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tenant-unit" className="text-lg font-medium">יחידה</Label>
+            <Label htmlFor="tenant-unit" className="text-lg font-medium">דירה</Label>
             <Select value={unitId} onValueChange={handleUnitChange}>
               <SelectTrigger id="tenant-unit" className="text-lg p-3"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_UNIT}>ללא יחידה</SelectItem>
+                <SelectItem value={NO_UNIT}>ללא דירה</SelectItem>
                 {availableUnits.map((u) => (
                   <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
                 ))}
@@ -161,7 +161,7 @@ export const TenantForm: React.FC<TenantFormProps> = ({
                     onChange={(e) => setRent(e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground">
-                    מולא מברירת המחדל של היחידה. אפשר לשנות.
+                    מולא מברירת המחדל של הדירה. אפשר לשנות.
                   </p>
                 </div>
                 <div className="space-y-2">

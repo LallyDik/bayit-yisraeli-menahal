@@ -56,7 +56,7 @@ const isAppTab = (value: string | null): value is AppTab => (
 const TAB_TITLES: Record<AppTab, string> = {
   overview: 'סקירה',
   payments: 'תשלומים',
-  units: 'יחידות',
+  units: 'דירות',
   tenants: 'שוכרים',
 };
 
@@ -389,7 +389,7 @@ const Index = () => {
         payment_method: paymentMethod,
       });
     } catch {
-      toast.error(`השוכר „${created.name}” נשמר, אך לא שויך ליחידה. אפשר לשייך אותו דרך עריכת השוכר.`);
+      toast.error(`השוכר „${created.name}” נשמר, אך לא שויך לדירה. אפשר לשייך אותו דרך עריכת השוכר.`);
     }
     return true;
   };
@@ -436,7 +436,7 @@ const Index = () => {
         });
       }
     } catch {
-      toast.error('פרטי השוכר נשמרו, אך העדכון בשיוך ליחידה נכשל. הטופס נשאר פתוח כדי שתוכלו לנסות שוב.');
+      toast.error('פרטי השוכר נשמרו, אך העדכון בשיוך לדירה נכשל. הטופס נשאר פתוח כדי שתוכלו לנסות שוב.');
       return false;
     }
     return true;
@@ -559,7 +559,7 @@ const Index = () => {
             <TabsList className="inline-flex h-auto w-auto min-w-max bg-transparent p-0" aria-label="ניווט ראשי">
               <TabsTrigger value="overview" data-guide="overview-tab" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">סקירה</TabsTrigger>
               <TabsTrigger value="payments" data-guide="payments-tab" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">תשלומים</TabsTrigger>
-              <TabsTrigger value="units" data-guide="units-tab" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">יחידות</TabsTrigger>
+              <TabsTrigger value="units" data-guide="units-tab" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">דירות</TabsTrigger>
               <TabsTrigger value="tenants" data-guide="tenants-tab" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">שוכרים</TabsTrigger>
             </TabsList>
           </div>
@@ -642,11 +642,11 @@ const Index = () => {
               <div className="mx-auto flex max-w-2xl flex-col gap-4">
                 <Button type="button" variant="ghost" className="w-fit rounded-full" onClick={() => { setAddingUnit(false); setEditingUnit(null); }}>
                   <ArrowRight className="h-4 w-4" />
-                  חזרה ליחידות
+                  חזרה לדירות
                 </Button>
                 <UnitForm
                   initialData={editingUnit ?? undefined}
-                  submitLabel={editingUnit ? 'שמירת שינויים' : 'הוספת יחידה'}
+                  submitLabel={editingUnit ? 'שמירת שינויים' : 'הוספת דירה'}
                   isSubmitting={unitSaving}
                   onSubmit={async (values) => {
                     try {
@@ -663,12 +663,12 @@ const Index = () => {
             ) : (
               <section data-tour="units">
                 <PageHeading
-                  title="יחידות"
+                  title="דירות"
                   description="כל הנכסים שאתם מנהלים, עם מצב תפוסה ופרטי השכירות."
                   action={(
                     <Button type="button" className="rounded-full" size="lg" onClick={() => setAddingUnit(true)} data-guide="add-unit">
                       <Plus className="h-5 w-5" />
-                      הוספת יחידה
+                      הוספת דירה
                     </Button>
                   )}
                 />
@@ -676,23 +676,23 @@ const Index = () => {
                 {units.length > 3 && (
                   <div className="relative mb-6 max-w-md">
                     <Search className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                    <Input value={unitQuery} onChange={(event) => setUnitQuery(event.target.value)} className="rounded-full bg-card pe-10" placeholder="חיפוש לפי שם או תיאור" aria-label="חיפוש יחידות" />
+                    <Input value={unitQuery} onChange={(event) => setUnitQuery(event.target.value)} className="rounded-full bg-card pe-10" placeholder="חיפוש לפי שם או תיאור" aria-label="חיפוש דירות" />
                   </div>
                 )}
 
                 {unitsLoading ? (
-                  <PageLoader label="טוענים יחידות..." />
+                  <PageLoader label="טוענים דירות..." />
                 ) : units.length === 0 ? (
                   <Card className="border-dashed bg-card text-center">
                     <CardContent className="px-6 py-12">
                       <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60"><Home className="h-8 w-8" /></span>
-                      <h3 className="font-display text-xl">מתחילים מהיחידה הראשונה</h3>
+                      <h3 className="font-display text-xl">מתחילים מהדירה הראשונה</h3>
                       <p className="mx-auto mt-2 max-w-md text-muted-foreground">צריך רק שם. שכ״ד, מאפיינים ומסמכים אפשר להוסיף גם אחר כך.</p>
-                      <Button type="button" className="mt-6 rounded-full" onClick={() => setAddingUnit(true)}><Plus className="h-4 w-4" />הוספת יחידה</Button>
+                      <Button type="button" className="mt-6 rounded-full" onClick={() => setAddingUnit(true)}><Plus className="h-4 w-4" />הוספת דירה</Button>
                     </CardContent>
                   </Card>
                 ) : filteredUnits.length === 0 ? (
-                  <Card className="border-dashed"><CardContent className="px-6 py-10 text-center"><p className="font-medium">לא נמצאו יחידות מתאימות</p><Button type="button" variant="link" onClick={() => setUnitQuery('')}>ניקוי החיפוש</Button></CardContent></Card>
+                  <Card className="border-dashed"><CardContent className="px-6 py-10 text-center"><p className="font-medium">לא נמצאו דירות מתאימות</p><Button type="button" variant="link" onClick={() => setUnitQuery('')}>ניקוי החיפוש</Button></CardContent></Card>
                 ) : (
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                     {filteredUnits.map((unit) => (
@@ -732,7 +732,7 @@ const Index = () => {
               <section data-tour="tenants">
                 <PageHeading
                   title="שוכרים"
-                  description="פרטי קשר, שיוך ליחידה והסכום שסוכם לכל תקופת שכירות."
+                  description="פרטי קשר, שיוך לדירה והסכום שסוכם לכל תקופת שכירות."
                   action={(
                     <Button type="button" className="rounded-full" size="lg" onClick={() => setAddingTenant(true)} data-guide="add-tenant">
                       <Plus className="h-5 w-5" />
@@ -755,7 +755,7 @@ const Index = () => {
                     <CardContent className="px-6 py-12">
                       <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/50"><Users className="h-8 w-8" /></span>
                       <h3 className="font-display text-xl">מוסיפים את השוכר הראשון</h3>
-                      <p className="mx-auto mt-2 max-w-md text-muted-foreground">אפשר לשייך אותו ליחידה עכשיו, או לשמור את הפרטים ולחזור לשיוך בהמשך.</p>
+                      <p className="mx-auto mt-2 max-w-md text-muted-foreground">אפשר לשייך אותו לדירה עכשיו, או לשמור את הפרטים ולחזור לשיוך בהמשך.</p>
                       <Button type="button" className="mt-6 rounded-full" onClick={() => setAddingTenant(true)}><Plus className="h-4 w-4" />הוספת שוכר</Button>
                     </CardContent>
                   </Card>

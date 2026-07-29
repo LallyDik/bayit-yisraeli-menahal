@@ -11,7 +11,7 @@ const scrollTo = (id: string) => () => {
 const FEATURES = [
   {
     icon: Users,
-    title: 'שוכרים ויחידות במקום אחד',
+    title: 'שוכרים ודירות במקום אחד',
     body: 'כל דירה, כל שוכר וכל שיוך - מסודר וברור. רואים מי גר איפה, מה שכר הדירה ומתי מתחיל החוזה.',
   },
   {
@@ -53,7 +53,7 @@ export const LandingPage = () => (
         <div className="relative mx-auto max-w-3xl text-center">
           <h1 className="font-display text-4xl leading-tight sm:text-6xl">מערכת ניהול שכירות<br />לבעלי דירות</h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-foreground/70">
-            שוכרים, יחידות ותשלומים - שכר דירה, חשמל, מים וגז - הכול במקום אחד, פשוט ובעברית.
+            שוכרים, דירות ותשלומים - שכר דירה, חשמל, מים וגז - הכול במקום אחד, פשוט ובעברית.
             רואים מי שילם, מה נשאר ומתי מגיע החיוב הבא.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
