@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle2, ReceiptText, WalletCards } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronDown, ReceiptText, WalletCards } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +71,7 @@ export function TenantPaymentSummaryDialog({
   onGoToDetails,
 }: TenantPaymentSummaryDialogProps) {
   const [editingPayment, setEditingPayment] = useState<EditingPayment | null>(null);
+  const [showPaid, setShowPaid] = useState(false);
 
   if (!tenancy) return null;
 
@@ -90,10 +91,41 @@ export function TenantPaymentSummaryDialog({
       const key = chargeSeriesKey(charge);
       if (!latestChargeIdBySeries.has(key)) latestChargeIdBySeries.set(key, charge.id);
     });
+  const openCharges = additionalCharges.filter((charge) => Number(charge.paid_amount) < Number(charge.amount_due));
+  const paidCharges = additionalCharges.filter((charge) => Number(charge.paid_amount) >= Number(charge.amount_due));
+  const openRemaining = openCharges.reduce((sum, charge) => sum + Math.max(Number(charge.amount_due) - Number(charge.paid_amount), 0), 0);
 
   const closeSummary = (nextOpen: boolean) => {
     if (!nextOpen && editingPayment) return;
     onOpenChange(nextOpen);
+  };
+
+  const renderChargeRow = (charge: ChargeWithPaid, showPeriodLabel: boolean) => {
+    const due = Number(charge.amount_due);
+    const paid = Number(charge.paid_amount);
+    const pending = pendingKeys.has(`charge:${charge.id}`);
+    const isPreviousPeriod = latestChargeIdBySeries.get(chargeSeriesKey(charge)) !== charge.id;
+    return (
+      <article key={charge.id} className="bg-background p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h4 className="truncate font-semibold">{charge.label}</h4>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {showPeriodLabel ? `${isPreviousPeriod ? 'חוב מתקופה קודמת' : 'חיוב נוכחי'} · ` : ''}לתשלום עד {formatBillingDate(charge.due_date)}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground nums">שולם {amount(paid)} מתוך {amount(due)} · נשאר {amount(Math.max(due - paid, 0))}</p>
+          </div>
+          <PaymentStatus due={due} paid={paid} />
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Button type="button" size="sm" className="h-9 flex-1 rounded-full" disabled={paid >= due || pending} onClick={() => { void onMarkChargePaid(charge).catch(() => undefined); }}>
+            <CheckCircle2 className="h-4 w-4" />
+            {pending ? 'שומר...' : markPaidLabel(tenancy.payment_method)}
+          </Button>
+          <Button type="button" size="sm" variant="outline" className="h-9 flex-1 rounded-full" disabled={pending} onClick={() => setEditingPayment({ kind: 'charge', charge })}>תשלום חלקי</Button>
+        </div>
+      </article>
+    );
   };
 
   return (
@@ -141,41 +173,36 @@ export function TenantPaymentSummaryDialog({
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
                   <h3 id="quick-additional-title" className="font-display text-lg">תשלומים נוספים</h3>
-                  <p className="text-sm text-muted-foreground">חשמל, מים וחיובים נוספים שהגיע מועד התשלום שלהם</p>
+                  <p className="text-sm text-muted-foreground">חשמל, מים וחיובים נוספים שעדיין ממתינים לתשלום</p>
                 </div>
-                {additionalCharges.length > 0 && <span className="shrink-0 text-sm font-medium nums">נשאר {amount(Math.max(additionalDue - additionalPaid, 0))}</span>}
+                {openCharges.length > 0 && <span className="shrink-0 text-sm font-medium nums">נשאר {amount(openRemaining)}</span>}
               </div>
 
-              {additionalCharges.length === 0 ? (
+              {openCharges.length === 0 ? (
                 <div className="rounded-2xl border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">אין כרגע חיובים נוספים לתשלום.</div>
               ) : (
                 <div className="divide-y overflow-hidden rounded-2xl border">
-                  {additionalCharges.map((charge) => {
-                    const due = Number(charge.amount_due);
-                    const paid = Number(charge.paid_amount);
-                    const pending = pendingKeys.has(`charge:${charge.id}`);
-                    const isPreviousPeriod = latestChargeIdBySeries.get(chargeSeriesKey(charge)) !== charge.id;
-                    return (
-                      <article key={charge.id} className="bg-background p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h4 className="truncate font-semibold">{charge.label}</h4>
-                            <p className="mt-0.5 text-xs text-muted-foreground">{isPreviousPeriod ? 'חוב מתקופה קודמת' : 'חיוב נוכחי'} · לתשלום עד {formatBillingDate(charge.due_date)}</p>
-                            <p className="mt-1 text-sm text-muted-foreground nums">שולם {amount(paid)} מתוך {amount(due)} · נשאר {amount(Math.max(due - paid, 0))}</p>
-                          </div>
-                          <PaymentStatus due={due} paid={paid} />
-                        </div>
-                        <div className="mt-3 flex gap-2">
-                          <Button type="button" size="sm" className="h-9 flex-1 rounded-full" disabled={paid >= due || pending} onClick={() => { void onMarkChargePaid(charge).catch(() => undefined); }}>
-                            <CheckCircle2 className="h-4 w-4" />
-                            {pending ? 'שומר...' : markPaidLabel(tenancy.payment_method)}
-                          </Button>
-                          <Button type="button" size="sm" variant="outline" className="h-9 flex-1 rounded-full" disabled={pending} onClick={() => setEditingPayment({ kind: 'charge', charge })}>תשלום חלקי</Button>
-                        </div>
-                      </article>
-                    );
-                  })}
+                  {openCharges.map((charge) => renderChargeRow(charge, true))}
                 </div>
+              )}
+
+              {paidCharges.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaid((previous) => !previous)}
+                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    aria-expanded={showPaid}
+                  >
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showPaid ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    {showPaid ? 'הסתר חיובים ששולמו' : `הצג חיובים ששולמו (${paidCharges.length})`}
+                  </button>
+                  {showPaid && (
+                    <div className="mt-1 divide-y overflow-hidden rounded-2xl border">
+                      {paidCharges.map((charge) => renderChargeRow(charge, false))}
+                    </div>
+                  )}
+                </>
               )}
             </section>
           </div>
