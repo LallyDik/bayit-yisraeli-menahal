@@ -31,6 +31,7 @@ interface DashboardProps {
   totalPaid: number;
   outstandingBalance: number;
   openChargeCount: number;
+  pastDebt: number;
   paymentPreview: TenantPaymentPreview[];
   onAddUnit: () => void;
   onAddTenant: () => void;
@@ -55,6 +56,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   totalPaid,
   outstandingBalance,
   openChargeCount,
+  pastDebt,
   paymentPreview,
   onAddUnit,
   onAddTenant,
@@ -159,13 +161,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <p className="mt-5 text-sm text-muted-foreground" role="status">מעדכן את מצב התשלומים...</p>
         ) : (
           <div className="mt-5 grid grid-cols-1 divide-y rounded-2xl bg-muted p-2 text-center sm:grid-cols-3 sm:divide-x-reverse sm:divide-x sm:divide-y-0">
-            <div className="min-w-0 px-2 py-2"><p className="text-xs text-muted-foreground">לתשלום עד היום</p><p className="mt-1 break-words text-sm font-bold nums sm:text-base">₪{totalDue.toLocaleString()}</p></div>
+            <div className="min-w-0 px-2 py-2"><p className="text-xs text-muted-foreground">לתשלום החודש</p><p className="mt-1 break-words text-sm font-bold nums sm:text-base">₪{totalDue.toLocaleString()}</p></div>
             <div className="min-w-0 px-2 py-2"><p className="text-xs text-muted-foreground">שולם</p><p className="mt-1 break-words text-sm font-bold nums sm:text-base">₪{totalPaid.toLocaleString()}</p></div>
             <div className="min-w-0 px-2 py-2"><p className="text-xs text-muted-foreground">נשאר</p><p className="mt-1 break-words text-sm font-bold nums sm:text-base">₪{Math.max(outstandingBalance, 0).toLocaleString()}</p></div>
           </div>
         )}
         {!billingLoading && !billingError && (
-          <p className="mt-3 text-sm text-muted-foreground">{openChargeCount > 0 ? `${openChargeCount} חיובים עדיין פתוחים` : 'כל החיובים שנוצרו מסומנים כשולמו'}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="text-sm text-muted-foreground">{openChargeCount > 0 ? `${openChargeCount} חיובים פתוחים החודש` : 'כל חיובי החודש מסומנים כשולמו'}</p>
+            {pastDebt > 0 && (
+              <span className="flex items-center gap-1.5 rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
+                חוב מחודשים קודמים
+                <span className="nums font-bold">₪{pastDebt.toLocaleString()}</span>
+              </span>
+            )}
+          </div>
         )}
 
         {!billingLoading && !billingError && paymentPreview.length > 0 && (

@@ -267,8 +267,28 @@ const Index = () => {
         .map((tenancy) => currentRentByTenancyId.get(tenancy.id)?.id)
         .filter((id): id is string => Boolean(id)),
     );
-    return dueActiveCharges.filter((charge) => charge.payment_type !== 'rent' || currentRentIds.has(charge.id));
+    // Extras (electricity/water/gas): keep only the latest-due charge of each
+    // recurring series per tenant, so the overview reflects the CURRENT period
+    // rather than the whole accumulated history. Older charges are past debt.
+    const currentExtra = new Map<string, (typeof dueActiveCharges)[number]>();
+    for (const charge of dueActiveCharges) {
+      if (charge.payment_type === 'rent') continue;
+      const term = charge.period_key?.match(/^term:([^:]+):/);
+      const key = `${charge.tenancy_id}|${term ? `term:${term[1]}` : charge.payment_type}`;
+      const existing = currentExtra.get(key);
+      if (!existing || charge.due_date > existing.due_date) currentExtra.set(key, charge);
+    }
+    const currentExtraIds = new Set([...currentExtra.values()].map((charge) => charge.id));
+    return dueActiveCharges.filter((charge) =>
+      charge.payment_type === 'rent' ? currentRentIds.has(charge.id) : currentExtraIds.has(charge.id),
+    );
   }, [activeTenancies, currentRentByTenancyId, dueActiveCharges]);
+  const pastDebt = useMemo(() => {
+    const currentIds = new Set(overviewCharges.map((charge) => charge.id));
+    return dueActiveCharges
+      .filter((charge) => !currentIds.has(charge.id))
+      .reduce((sum, charge) => sum + Math.max(Number(charge.amount_due) - Number(charge.paid_amount), 0), 0);
+  }, [dueActiveCharges, overviewCharges]);
 
   const paymentOverview = useMemo(() => {
     return overviewCharges
@@ -287,7 +307,7 @@ const Index = () => {
   const paymentPreview = useMemo<TenantPaymentPreview[]>(() => activeTenancies
     .map((tenancy) => {
       const rentCharge = currentRentByTenancyId.get(tenancy.id);
-      const additionalCharges = dueActiveCharges.filter((charge) => (
+      const additionalCharges = overviewCharges.filter((charge) => (
         charge.tenancy_id === tenancy.id && charge.payment_type !== 'rent'
       ));
       const additionalDue = additionalCharges.reduce((sum, charge) => sum + Number(charge.amount_due), 0);
@@ -309,22 +329,28 @@ const Index = () => {
       const firstRemaining = Math.max(first.rentDue - first.rentPaid, 0) + Math.max(first.additionalDue - first.additionalPaid, 0);
       const secondRemaining = Math.max(second.rentDue - second.rentPaid, 0) + Math.max(second.additionalDue - second.additionalPaid, 0);
       return secondRemaining - firstRemaining || first.tenantName.localeCompare(second.tenantName, 'he');
-    }), [activeTenancies, currentRentByTenancyId, dueActiveCharges]);
+    }), [activeTenancies, currentRentByTenancyId, overviewCharges]);
 
   const selectedPaymentTenancy = useMemo(() => (
     activeTenancies.find((tenancy) => tenancy.id === selectedPaymentTenancyId) ?? null
   ), [activeTenancies, selectedPaymentTenancyId]);
-  const selectedAdditionalCharges = useMemo(() => (
-    selectedPaymentTenancy
-      ? dueActiveCharges
-        .filter((charge) => charge.tenancy_id === selectedPaymentTenancy.id && charge.payment_type !== 'rent')
-        .sort((first, second) => {
-          const firstOpen = Number(first.paid_amount) < Number(first.amount_due);
-          const secondOpen = Number(second.paid_amount) < Number(second.amount_due);
-          return Number(secondOpen) - Number(firstOpen) || second.due_date.localeCompare(first.due_date);
-        })
-      : []
-  ), [dueActiveCharges, selectedPaymentTenancy]);
+  const selectedAdditionalCharges = useMemo(() => {
+    if (!selectedPaymentTenancy) return [];
+    // Current-period extras (even if already paid) plus any older charge that
+    // still has an open balance. Fully-paid past charges stay in the expanded
+    // view, so the quick popup only shows this month + real outstanding debt.
+    const currentIds = new Set(
+      overviewCharges.filter((charge) => charge.payment_type !== 'rent').map((charge) => charge.id),
+    );
+    return dueActiveCharges
+      .filter((charge) => charge.tenancy_id === selectedPaymentTenancy.id && charge.payment_type !== 'rent')
+      .filter((charge) => currentIds.has(charge.id) || Number(charge.paid_amount) < Number(charge.amount_due))
+      .sort((first, second) => {
+        const firstOpen = Number(first.paid_amount) < Number(first.amount_due);
+        const secondOpen = Number(second.paid_amount) < Number(second.amount_due);
+        return Number(secondOpen) - Number(firstOpen) || second.due_date.localeCompare(first.due_date);
+      });
+  }, [dueActiveCharges, overviewCharges, selectedPaymentTenancy]);
 
   const openTenantPaymentDetails = useCallback((tenancyId: string) => {
     setSelectedPaymentTenancyId(null);
@@ -580,6 +606,7 @@ const Index = () => {
                 totalPaid={paymentOverview.paid}
                 outstandingBalance={paymentOverview.outstanding}
                 openChargeCount={paymentOverview.openCount}
+                pastDebt={pastDebt}
                 paymentPreview={paymentPreview}
                 onAddUnit={() => { setTab('units'); setAddingUnit(true); }}
                 onAddTenant={() => { setTab('tenants'); setAddingTenant(true); }}
