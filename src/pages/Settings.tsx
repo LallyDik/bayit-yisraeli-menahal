@@ -55,7 +55,7 @@ const Settings = () => {
         <Card className="mt-6 rounded-2xl">
           <CardContent className="flex items-center justify-between gap-4 p-5">
             <div>
-              <Label htmlFor="email-reminders" className="text-base">תזכורות תשלום במייל</Label>
+              <Label htmlFor="email-reminders" className="text-base font-semibold">תזכורות תשלום במייל</Label>
               <p className="mt-1 text-sm text-muted-foreground">
                 קבלת מייל תקופתי על חיובים שהגיע מועדם ועדיין לא סומנו כשולמו.
               </p>
@@ -73,13 +73,13 @@ const Settings = () => {
         <Card className="mt-4 rounded-2xl">
           <CardContent className="space-y-5 p-5">
             <div>
-              <h2 className="font-display text-lg">תזמון</h2>
+              <h2 className="font-display text-lg font-semibold">תזמון</h2>
               <p className="text-sm text-muted-foreground">שליטה על מתי חיובים נפתחים לסימון ומתי נשלחת התזכורת.</p>
             </div>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <Label htmlFor="open-days" className="text-base">פתיחת חיוב לסימון</Label>
-                <p className="mt-1 text-sm text-muted-foreground">כמה ימים לפני מועד התשלום החיוב מופיע כ„לתשלום”.</p>
+                <Label htmlFor="open-days" className="text-base font-semibold">פתיחת חיוב לסימון</Label>
+                <p className="mt-1 text-sm text-muted-foreground">כמה ימים לפני מועד התשלום החיוב נפתח לסימון בסקירה.</p>
               </div>
               <Input
                 key={`open-${loading}`}
@@ -90,7 +90,7 @@ const Settings = () => {
             </div>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <Label htmlFor="reminder-offset" className="text-base">שליחת תזכורת</Label>
+                <Label htmlFor="reminder-offset" className="text-base font-semibold">שליחת תזכורת</Label>
                 <p className="mt-1 text-sm text-muted-foreground">כמה ימים אחרי מועד התשלום נשלחת התזכורת (0 = ביום התשלום).</p>
               </div>
               <Input
