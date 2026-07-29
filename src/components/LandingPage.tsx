@@ -1,7 +1,7 @@
 import {
-  Users, WalletCards, Gauge, CalendarClock, Mail,
+  Users, WalletCards, Gauge, CalendarClock, Mail, FileText,
   Home, UserPlus, CircleCheckBig,
-  Languages, CalendarDays, BellRing, Gift,
+  Languages, CalendarDays, BellRing,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Auth } from '@/components/Auth';
@@ -43,13 +43,18 @@ const FEATURES = [
     title: 'תזכורות תשלום במייל',
     body: 'מקבלים מייל תקופתי על חיובים שהגיע מועדם ועדיין לא שולמו - כדי לא לפספס אף תשלום.',
   },
+  {
+    icon: FileText,
+    tint: 'bg-accent/60 text-accent-foreground',
+    title: 'מסמכים וחוזים במקום אחד',
+    body: 'מצרפים חוזה, קבלה או כל מסמך לכל דירה ולכל שוכר - נגיש בדיוק כשצריך.',
+  },
 ];
 
 const BENEFITS = [
   { icon: Languages, label: 'בעברית מלאה' },
   { icon: CalendarDays, label: 'לוח עברי ולועזי' },
   { icon: BellRing, label: 'תזכורות אוטומטיות' },
-  { icon: Gift, label: 'חינם להתחלה' },
 ];
 
 const STEPS = [
@@ -85,7 +90,7 @@ export const LandingPage = () => (
             רואים מי שילם, מה נשאר ומתי מגיע החיוב הבא.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button size="lg" className="rounded-full" onClick={scrollTo('login')}>התחילו עכשיו - בחינם</Button>
+            <Button size="lg" className="rounded-full" onClick={scrollTo('login')}>התחילו עכשיו</Button>
             <Button size="lg" variant="outline" className="rounded-full bg-white/70" onClick={scrollTo('features')}>איך זה עובד</Button>
           </div>
         </div>
@@ -93,7 +98,7 @@ export const LandingPage = () => (
 
       {/* Benefits strip */}
       <section className="px-5">
-        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 rounded-[2rem] bg-gradient-to-l from-primary/10 via-secondary/20 to-accent/15 p-4 sm:grid-cols-4 sm:gap-4 sm:p-5">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-3 rounded-[2rem] bg-gradient-to-l from-primary/10 via-secondary/20 to-accent/15 p-4 sm:grid-cols-3 sm:gap-4 sm:p-5">
           {BENEFITS.map((item) => (
             <div key={item.label} className="flex items-center justify-center gap-2 rounded-2xl bg-white/60 px-3 py-3 text-center text-sm font-medium text-foreground/80">
               <item.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
@@ -157,10 +162,10 @@ export const LandingPage = () => (
           <div className="relative">
             <h2 className="font-display text-3xl leading-tight sm:text-4xl">מוכנים לעשות סדר בשכירות?</h2>
             <p className="mx-auto mt-3 max-w-lg text-primary-foreground/85">
-              פותחים חשבון בחינם ומתחילים לנהל את הדירות, השוכרים והתשלומים במקום אחד.
+              פותחים חשבון ומתחילים לנהל את הדירות, השוכרים והתשלומים במקום אחד.
             </p>
             <Button size="lg" variant="secondary" className="mt-7 rounded-full" onClick={scrollTo('login')}>
-              התחילו עכשיו - בחינם
+              התחילו עכשיו
             </Button>
           </div>
         </div>
