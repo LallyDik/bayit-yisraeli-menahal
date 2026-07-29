@@ -1,4 +1,4 @@
-import { Users, WalletCards, Gauge, CalendarClock } from 'lucide-react';
+import { Users, WalletCards, Gauge, CalendarClock, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Auth } from '@/components/Auth';
 import { SiteFooter } from '@/components/SiteFooter';
@@ -29,6 +29,11 @@ const FEATURES = [
     title: 'לוח שנה עברי ולועזי',
     body: 'מועדי חיוב לפי הלוח שמתאים לכם - עברי או לועזי - עם ציון המועד הבא לכל תשלום.',
   },
+  {
+    icon: Mail,
+    title: 'תזכורות תשלום במייל',
+    body: 'מקבלים מייל תקופתי על חיובים שהגיע מועדם ועדיין לא שולמו - כדי לא לפספס אף תשלום.',
+  },
 ];
 
 export const LandingPage = () => (
@@ -55,9 +60,6 @@ export const LandingPage = () => (
             <Button size="lg" className="rounded-full" onClick={scrollTo('login')}>התחילו עכשיו - בחינם</Button>
             <Button size="lg" variant="outline" className="rounded-full bg-white/70" onClick={scrollTo('features')}>איך זה עובד</Button>
           </div>
-          <p className="mx-auto mt-4 max-w-md text-sm text-foreground/60">
-            בשלב פיתוח ראשוני - השימוש חינם. פיצ'רים נוספים שייכנסו בהמשך יהיו בתשלום.
-          </p>
         </div>
       </section>
 
